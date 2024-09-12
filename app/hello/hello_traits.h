@@ -10,9 +10,9 @@ template<> struct Traits<Build>: public Traits_Tokens
 {
     // Basic configuration
     static const unsigned int SMOD = LIBRARY;
-    static const unsigned int ARCHITECTURE = RV64;
-    static const unsigned int MACHINE = RISCV;
-    static const unsigned int MODEL = SiFive_U;
+    static const unsigned int ARCHITECTURE = ];
+    static const unsigned int MACHINE = PC;
+    static const unsigned int MODEL = Legacy_PC;
     static const unsigned int CPUS = 1;
     static const unsigned int NETWORKING = STANDALONE;
     static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)
@@ -29,8 +29,8 @@ template<> struct Traits<Debug>: public Traits<Build>
 {
     static const bool error   = true;
     static const bool warning = true;
-    static const bool info    = false;
-    static const bool trace   = false;
+    static const bool info    = true;
+    static const bool trace   = true;
 };
 
 template<> struct Traits<Lists>: public Traits<Build>
