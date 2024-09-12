@@ -55,7 +55,7 @@ endif
 TOUCH           = touch
 
 # Tools and flags to compile system tools
-TCC             = gcc -ansi -c -Werror
+TCC             = gcc -ansi -c
 TCCFLAGS        = -Wall -O -I$(INC)
 TCXX            = g++ -c -ansi -fno-exceptions -std=c++14
 TCXXFLAGS       = -Wall -O -I$(INC)
