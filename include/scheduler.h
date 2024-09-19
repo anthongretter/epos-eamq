@@ -275,6 +275,20 @@ public:
     void handle(Event event);
 };
 
+// Energy Aware Multi Queue
+class EAMQ: public Priority
+{
+    public:
+        static const bool timed = true;
+        static const bool dynamic = true;
+        static const bool preemptive = true;
+
+    public:
+        template <typename ... Tn>
+        EAMQ(int p = NORMAL, Tn & ... an);
+        
+};
+
 __END_SYS
 
 #endif
