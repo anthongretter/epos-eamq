@@ -1,5 +1,5 @@
 #include <utility/ostream.h>
-#inclide <synchronizer.h>
+#include <synchronizer.h>
 #include <process.h>
 
 using namespace EPOS;

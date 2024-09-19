@@ -10,7 +10,7 @@ template<> struct Traits<Build>: public Traits_Tokens
 {
     // Basic configuration
     static const unsigned int SMOD = LIBRARY;
-    static const unsigned int ARCHITECTURE = ];
+    static const unsigned int ARCHITECTURE = IA32;
     static const unsigned int MACHINE = PC;
     static const unsigned int MODEL = Legacy_PC;
     static const unsigned int CPUS = 1;
