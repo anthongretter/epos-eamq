@@ -304,7 +304,17 @@ void Thread::reschedule()
     assert(locked()); // locking handled by caller
 
     Thread * prev = running();
-    Thread * next = _scheduler.choose();
+    // rankear aqui novamente (a thread prev)
+    // talvez (seguindo nosso pseudo):
+    //      struct optimal = AEMQ::rank(prev*)
+    //      optimal.q.insert(prev, optimal.i)    // aqui talvez precise estar em um "rerank", 
+    //                                              ou em uma especialização do Scheduler,
+    //                                              ja que aqui, a lista nao possui o controle
+    //                                              de olhar para trás, para avaliar 
+    //                                              as possiveis Threads afetadas.
+    //                                              Mas ela possui ferramentas de iteração
+    
+    Thread * next = _scheduler.choose();    // aqui somente escolhe o proximo na lista
 
     dispatch(prev, next);
 }
