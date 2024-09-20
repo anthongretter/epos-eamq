@@ -1,10 +1,11 @@
 FROM fedora:40
 
-RUN yum -y update && yum clean all
-RUN yum -y install git qemu binutils binutils-x86_64-linux-gnu nano micro nvim vim dev86 \
-    && yum clean all
+ENV APP=hello
 
-CMD git clone https://gitlab.lisha.ufsc.br/epos/ine5424.git && \
-    cd ine5424 && \
-    git checkout 2024_2 && \
-    /bin/sh
+RUN yum -y update &&  \
+    yum -y install make qemu binutils binutils-x86_64-linux-gnu nano dev86 && \
+    yum clean all
+
+WORKDIR /app
+
+CMD ["make", "APPLICATION=$APP", "run"]
