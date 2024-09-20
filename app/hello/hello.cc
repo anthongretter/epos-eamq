@@ -8,8 +8,7 @@ OStream cout;
 
 int main()
 {
-    int tasks[3];
-
+    cout << "Hello\n" << endl;
 
     return 0;
 }
