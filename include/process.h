@@ -55,7 +55,7 @@ public:
 
     // Thread Configuration
     struct Configuration {
-        Configuration(State s = READY, Criterion c = NORMAL, unsigned int ss = STACK_SIZE)
+        Configuration(State s = READY, Criterion c = NORMAL, unsigned int ss = STACK_SIZE, unsigned int d = 10)
         : state(s), criterion(c), stack_size(ss) {}
 
         State state;

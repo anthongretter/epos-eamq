@@ -34,8 +34,6 @@ int main()
     phil[3] = new Thread(&philosopher, 3, 16, 24);
     phil[4] = new Thread(&philosopher, 4, 10, 20);
 
-    phil[0]->state().
-
     cout << "Philosophers are alive and hungry!" << endl;
 
     Display::position(7, 44);
