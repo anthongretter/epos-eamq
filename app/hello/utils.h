@@ -55,7 +55,8 @@ void print_queues(ProfileQueue* (&qs)[N_QUEUES], DummyThread* (&ts)[N_THREADS])
     for (size_t i = 0; i < N_QUEUES; i++)
     {   
         cout << "Q" << i;
-        for (ProfileQueue::Iterator it = qs[i]->end(); &(*it) != nullptr; i++)
+        // qs[i]->end()->object()->l retora nada por algum motivo -> tail() funciona 
+        for (ProfileQueue::Iterator it = qs[i]->tail(); &(*it) != nullptr; it = it->prev())
         {
             cout << " | " << it->object()->l;
         }
