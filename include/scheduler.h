@@ -276,47 +276,51 @@ public:
 };
 
 // Energy Aware Multi Queue
-class EAMQ: public Priority
-/* Coisas ainda não pensadas para implementação, coloquem coisas aqui:
- *      - como rankear novamente após cada prempção (cada quantum)?
- *          - deixei um comment na reschedule da thread de ideias
- *      - 
- * */
-{
-    public:
-        static const unsigned int QUEUES = 4 // or maybe a trait?
+// class EAMQ: public Priority
+// /* Coisas ainda não pensadas para implementação, coloquem coisas aqui:
+//  *      - como rankear novamente após cada prempção (cada quantum)?
+//  *          - deixei um comment na reschedule da thread de ideias
+//  *      - 
+//  * */
+// {
+//     public:
+//         static const unsigned int QUEUES = 4 // or maybe a trait?
 
-        static const bool timed = true;
-        static const bool dynamic = true;
-        static const bool preemptive = true;
+//         // Por conta da implementação da multilist, acredito que o numero de filas seja declarado aqui
+//         static const unsigned int QUEUES = 4 // or maybe a trait?
 
-    public:
-        // aqui, ele vai retornar o indice na fila atual (pelo q entendi),
-        // mas devemos talvez alterar para que a fila "optimal" seja a referenciada  
-        EAMQ(int p = NORMAL, const Microsecond & d): Priority(rank()) {}
+//         static const bool timed = true;
+//         static const bool dynamic = true;
+//         static const bool preemptive = true;
 
-        template <typename T>
-        static int rank(T obj);         // talvez colocar deadline e outros como parametro
-                                        // para pegar a thread de maior deadline, basta um .tail
-                                            // muitas coisas vao ter q ser implementadas no dispatch creio eu
+//     public:
+//         // aqui, ele vai retornar o indice na fila atual (pelo q entendi),
+//         // mas devemos talvez alterar para que a fila "optimal" seja a referenciada  
+//         EAMQ(int p = NORMAL, const Microsecond & d): Priority(rank()) {}
 
-        // unsigned int queue() const;  // este deve estar na thread 
-        static unsigned int current_queue();
-};
+//         template <typename T>
+//         static int rank(T obj);         // talvez colocar deadline e outros como parametro
+//                                         // para pegar a thread de maior deadline, basta um .tail
+//                                         // muitas coisas vao ter q ser implementadas no dispatch creio eu
+
+//         unsigned int queue() const;
+//         static unsigned int current_queue();
+//         void next_queue();
+// };
 
 __END_SYS
 
-__BEGIN_UTIL
+// __BEGIN_UTIL
 
-/* Então,
- * Parece que já existe uma implementação de fila com mais "filas". Uhuul
- * Ela meio q particiona uma fila em diversas, e mantem um ponteiro a atual.
- * O comentário da Scheduling_Multilist mostra oq deve ser implementado no critério (Priority) 
- * */
-template<typename T>
-class Scheduling_Queue<T, EAMQ>:
-public Scheduling_Multilist<T> {};
+// /* Então,
+//  * Parece que já existe uma implementação de fila com mais "filas". Uhuul
+//  * Ela meio q particiona uma fila em diversas, e mantem um ponteiro a atual.
+//  * O comentário da Scheduling_Multilist mostra oq deve ser implementado no critério (Priority) 
+//  * */
+// template<typename T>
+// class Scheduling_Queue<T, EAMQ>:
+// public Scheduling_Multilist<T> {};
 
-__END_UTIL
+// __END_UTIL
 
 #endif
