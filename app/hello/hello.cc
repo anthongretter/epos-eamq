@@ -30,16 +30,23 @@ Optimal rank(DummyThread * t)
 
         // WCET esperado para este perfil
         Microsecond wcet_waiting_profile = expected_wcet(f);
+        cout << "WCET de " << t->l << ": " << wcet_waiting_profile << endl;
 
         // Cálculo do tempo de espera
         const int queue_time = static_cast<float>(wcet_waiting_profile / Q) == static_cast<int>((wcet_waiting_profile / Q)) ? (static_cast<int>((wcet_waiting_profile / Q)) - 1) : static_cast<int>((wcet_waiting_profile / Q) );
+        //const int round_float = static_cast<int>((wcet_waiting_profile/Q)*100);
+        //const int queue_time = round_float == static_cast<int>((wcet_waiting_profile / Q))*100 ? (static_cast<int>((wcet_waiting_profile / Q)) - 1) : static_cast<int>((wcet_waiting_profile / Q) );
         Microsecond waiting_time = Q * (N_QUEUES - 1) * (queue_time);
+        cout << "Waiting time de " << t->l << ": " << waiting_time << endl;
 
         // Tempo restante para a thread atual até o deadline (se estiver vazia = 0)
         Microsecond time_remaining = t->d - ((t_maior_d ? t_maior_d->object()->d : 0) + waiting_time);
+        cout << "Time remaining de " << t->l << ": " << time_remaining << endl;
 
         // Cálculo do tempo "caso"
         Microsecond time_case = time_remaining - wcet_waiting_profile;
+        cout << "Time case de " << t->l << ": " << time_case << endl;
+
 
         // Se o tempo calculado for positivo (??????????e menor que o "optimal" atual???????????)
         // Garante que sempre pega fila com menor frequencia possivel
@@ -119,16 +126,40 @@ void populate()
     }
 }
 
+void round_robin_simulation()
+{
+    TSC_Chronometer chronometer;
+    int max_change = 8;
+    int count_change = 0;
+
+    while (count_change <= max_change) {
+        for (size_t i = 0; i < N_QUEUES; i++){
+            count_change++;
+            //round robin numa fila 
+            ProfileQueue* queue = qs[i];
+
+            chronometer.reset();
+            chronometer.start();
+
+            for (ProfileQueue::Iterator it = queue->begin(); it != queue->end(); it++){
+                cout << "Executando thread" << it->object()->l << ": com deadline " << it->object()->d << " da fila " << i << endl;
+                //logica do thread executando
+                //Alarm::delay(expected_wcet(i));>>
+                if (chronometer.read() >= 100) {
+                    cout << "Quantum de " << Q << " us atingido para a fila " << i << endl;
+                    break;
+                }
+            }
+            chronometer.stop();
+        }
+
+    }
+}
+
 int main()
 {
-
-    TSC_Chronometer chronometer;
-    chronometer.reset();
-    chronometer.start();
-    cout << chronometer.read() << endl;
-    cout << chronometer.read() << endl;
-
-    // populate();
+    populate();
+    round_robin_simulation();
 
     return 0;
 }
