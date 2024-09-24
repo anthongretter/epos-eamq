@@ -7,12 +7,7 @@
 using namespace EPOS;
 OStream cout;
 
-
-const unsigned int BASE_WCET = 20000;
-const unsigned int DEADLINE_CAP = BASE_WCET + 200000;
-const unsigned int N_QUEUES = 4;
 const unsigned int Q = Traits<Thread>::QUANTUM;
-const unsigned int N_THREADS = 10;
 
 char _counter = 'a';
 
@@ -23,13 +18,9 @@ typedef Ordered_List<DummyThread *, List_Element_Rank, List_Elements::Doubly_Lin
 typedef ProfileQueue::Element ProfileElement;
 typedef ProfileQueue::Rank_Type ProfileRank;
 
+typedef Traits<Application> SimVars;
 
-int expected_wcet(const unsigned int profile_queue)
-{   
-    const unsigned int rand = static_cast<unsigned>(Random::random()) % 20000;
-    // return (BASE_WCET + rand) + (profile_queue * rand);
-    return (BASE_WCET + rand) + (profile_queue * 10000);
-}
+
 struct DummyThread{
     typedef Thread::State State;
 
@@ -38,13 +29,14 @@ struct DummyThread{
     ProfileRank rank;
     char l;
     unsigned int cwt; // current waiting time
-    unsigned int wcet_remaining[N_QUEUES];
+    unsigned int wcet_remaining[SimVars::N_QUEUES];
 
     DummyThread(unsigned int deadline, State st = State::WAITING) : d(deadline), s(st), rank(-1), l(_counter++), cwt(0) 
     {
-        for (unsigned int i = 0; i < N_QUEUES; i++)
+        for (unsigned int i = 0; i < SimVars::N_QUEUES; i++)
         {
-            wcet_remaining[i] = expected_wcet(i);
+            const unsigned int rand = static_cast<unsigned>(Random::random()) % 20000;
+            wcet_remaining[i] = (SimVars::BASE_WCET + rand) + (i * 10000);
         }
     }
 };
@@ -57,17 +49,15 @@ struct Optimal{
 };
 
 
-
-void print_queues(ProfileQueue* (&qs)[N_QUEUES], DummyThread* (&ts)[N_THREADS])
+void print_queues(ProfileQueue* (&qs)[SimVars::N_QUEUES], DummyThread* (&ts)[SimVars::N_THREADS])
 {
     cout << '-' << endl;
-    for (size_t i = 0; i < N_QUEUES; i++)
+    for (size_t i = 0; i < SimVars::N_QUEUES; i++)
     {   
         cout << "Q" << i;
-        // qs[i]->end()->object()->l retora nada por algum motivo -> tail() funciona 
         for (ProfileQueue::Iterator it = qs[i]->tail(); &(*it) != nullptr; it = it->prev())
         {
-            cout << " | " << it->object()->l << ": "<< it->object()->cwt;
+            cout << " | " << it->object()->l << " cwt: "<< it->object()->cwt;
         }
         cout << " | " << endl;
     }
