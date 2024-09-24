@@ -13,7 +13,7 @@ DummyThread * ts[N_THREADS];
 
 Optimal rank(DummyThread * t)
 {
-    Optimal optimal(0, 99999);
+    Optimal optimal;
 
     for (unsigned int f = 0; f < N_QUEUES; f++) {
         ProfileQueue* queue = qs[f];
@@ -22,36 +22,41 @@ Optimal rank(DummyThread * t)
         // Tail??? acessar elementos da fila de maior deadline -> menor deadline
         for (ProfileElement* elem = queue->tail(); elem; elem = elem->next()) {
             DummyThread* thread_in_queue = elem->object();
-            if (!t_maior_d || thread_in_queue->d < t->d) {
+            //cwt + wcet_restante*15% (margem extra para não chegar no limite) < deadline
+            if (!t_maior_d || (thread_in_queue->cwt + static_cast<int>(thread_in_queue->wcet_remaining[f]*1.15) + t->wcet_remaining[f]) < t->d ) {
                 t_maior_d = elem;
                 break;
             }
         }
 
         // WCET esperado para este perfil
-        Microsecond wcet_waiting_profile = expected_wcet(f);
-        cout << "WCET de " << t->l << ": " << wcet_waiting_profile << endl;
+        int wcet_profile = t->wcet_remaining[f];
+        cout << "WCET of " << t->l << ": " << wcet_profile << " em " << f << endl;
 
-        // Cálculo do tempo de espera
-        const int queue_time = static_cast<float>(wcet_waiting_profile / Q) == static_cast<int>((wcet_waiting_profile / Q)) ? (static_cast<int>((wcet_waiting_profile / Q)) - 1) : static_cast<int>((wcet_waiting_profile / Q) );
-        //const int round_float = static_cast<int>((wcet_waiting_profile/Q)*100);
-        //const int queue_time = round_float == static_cast<int>((wcet_waiting_profile / Q))*100 ? (static_cast<int>((wcet_waiting_profile / Q)) - 1) : static_cast<int>((wcet_waiting_profile / Q) );
-        Microsecond waiting_time = Q * (N_QUEUES - 1) * (queue_time);
-        cout << "Waiting time de " << t->l << ": " << waiting_time << endl;
+        // Numero de ciclos do round robin para a proxima exec.
+        const int rr_rounds = static_cast<float>(wcet_profile / Q) == static_cast<int>((wcet_profile / Q)) ? (static_cast<int>((wcet_profile / Q)) - 1) : static_cast<int>((wcet_profile / Q) );
+        cout << "Round robin rounds to wait " << t->l << ": " << rr_rounds << endl;
 
-        // Tempo restante para a thread atual até o deadline (se estiver vazia = 0)
-        Microsecond time_remaining = t->d - ((t_maior_d ? t_maior_d->object()->d : 0) + waiting_time);
-        cout << "Time remaining de " << t->l << ": " << time_remaining << endl;
+        // Tempo de espera do RR ate sua execucao, no pior caso (toda fila possui pelo menos uma thread)
+        int rr_waiting_time = Q * (N_QUEUES - 1) * (rr_rounds);
+        cout << "Round robin waiting time " << t->l << ": " << rr_waiting_time << endl;
+        
+        // tempo de espera atual desta fila = tempo de espera (RR) + wcet restante da fila
+        const int cwt_profile = rr_waiting_time + (t_maior_d ? t_maior_d->object()->wcet_remaining[f] : 0);
+        cout << "Total waiting time of " << t->l << ": " << cwt_profile << endl;
 
-        // Cálculo do tempo "caso"
-        Microsecond time_case = time_remaining - wcet_waiting_profile;
-        cout << "Time case de " << t->l << ": " << time_case << endl;
+        // Tempo de execução disponivel, dada espera nesta fila
+        int available_time_to_run = t->d - cwt_profile;
+        cout << "Time to run of " << t->l << ": " << available_time_to_run << endl;
 
-
+        // Cálculo do tempo "inativo"
+        int idle_time = available_time_to_run - wcet_profile;
+        cout << "Idle time of " << t->l << ": " << idle_time << endl << endl;
+        
         // Se o tempo calculado for positivo (??????????e menor que o "optimal" atual???????????)
         // Garante que sempre pega fila com menor frequencia possivel
-        if (time_case > 0) {
-            optimal = Optimal(f, time_case);
+        if (idle_time >= 0) {
+            optimal = Optimal(f, cwt_profile);
         }
     }
 
@@ -67,14 +72,15 @@ void assure_behind(ProfileElement * inserted, Optimal op)
         //salva p->prev() no prev
         ProfileElement * prev = p->prev();
         // remover thread p
-        qs[op.queueNum]->remove(p);
+        qs[op.queue_num]->remove(p);
         // recalcula 
         Optimal op_prev = rank(p->object());
+        p->object()->cwt = op_prev.cwt;
         // reinsere na posicao certa
-        qs[op_prev.queueNum]->insert(p);
+        qs[op_prev.queue_num]->insert(p);
 
         // se migra para outra fila -> verifica seus anteriores
-        if (op.queueNum != op_prev.queueNum) {assure_behind(p, op_prev);}
+        if (op.queue_num != op_prev.queue_num) {assure_behind(p, op_prev);}
         // atualiza p para proximo prev
         p = prev;
     }
@@ -113,13 +119,15 @@ void populate()
         //     Traits<Application>::STACK_SIZE, static_cast<unsigned>(Random::random()));
         // Thread *t = new Thread(conf, &work);
         // ts[i] = t;
-        unsigned int random_d = static_cast<unsigned>((Random::random() % DEADLINE_CAP) + 10);
+        unsigned int random_d = static_cast<unsigned>(DEADLINE_CAP);
         ts[i] = new DummyThread(random_d);
+        cout << "Deadline de thread "<< ts[i]->l <<": " << random_d << endl << endl;
 
         Optimal op = rank(ts[i]);
+        ts[i]->cwt = op.cwt;
         ProfileElement* pe = new ProfileElement(ts[i]);
-        pe->rank(ProfileQueue::Rank_Type(op.time_deadline));
-        qs[op.queueNum]->insert(pe);
+        pe->rank(ProfileQueue::Rank_Type(op.cwt));
+        qs[op.queue_num]->insert(pe);
         assure_behind(pe, op);
         
         print_queues(qs, ts);
@@ -145,7 +153,7 @@ void round_robin_simulation()
                 cout << "Executando thread" << it->object()->l << ": com deadline " << it->object()->d << " da fila " << i << endl;
                 //logica do thread executando
                 //Alarm::delay(expected_wcet(i));>>
-                if (chronometer.read() >= 100) {
+                if (chronometer.read() >= 10000) {
                     cout << "Quantum de " << Q << " us atingido para a fila " << i << endl;
                     break;
                 }
