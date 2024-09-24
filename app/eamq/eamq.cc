@@ -8,14 +8,14 @@
 
 using namespace EPOS;
 
-ProfileQueue * qs[N_QUEUES];
-DummyThread * ts[N_THREADS];
+ProfileQueue * qs[SimVars::N_QUEUES];
+DummyThread * ts[SimVars::N_THREADS];
 
 Optimal rank(DummyThread * t)
 {
     Optimal optimal;
 
-    for (unsigned int f = 0; f < N_QUEUES; f++) {
+    for (unsigned int f = 0; f < SimVars::N_QUEUES; f++) {
         ProfileQueue* queue = qs[f];
         // deadline maior dos menores
         ProfileElement* t_maior_d = nullptr;
@@ -38,7 +38,7 @@ Optimal rank(DummyThread * t)
         cout << "Round robin rounds to wait " << t->l << ": " << rr_rounds << endl;
 
         // Tempo de espera do RR ate sua execucao, no pior caso (toda fila possui pelo menos uma thread)
-        int rr_waiting_time = Q * (N_QUEUES - 1) * (rr_rounds);
+        int rr_waiting_time = Q * (SimVars::N_QUEUES - 1) * (rr_rounds);
         cout << "Round robin waiting time " << t->l << ": " << rr_waiting_time << endl;
         
         // tempo de espera atual desta fila = tempo de espera (RR) + wcet restante da fila
@@ -86,45 +86,20 @@ void assure_behind(ProfileElement * inserted, Optimal op)
     }
 }
 
-// void assure_behind3(ProfileElement * inserted, Optimal op)
-// {
-//     ProfileQueue::Iterator it(inserted->prev());
-//     for (; &(*it) != nullptr;)
-//     {
-//         ProfileElement c = *it;
-//         it--;
 
-//         qs[op.queueNum]->remove(&c);
-//         // recalcula 
-//         Optimal op_prev = rank((&c)->object());
-//         // reinsere na posicao certa
-//         qs[op_prev.queueNum]->insert(&c);
-
-//         // se migra para outra fila -> verifica seus anteriores
-//         if (op.queueNum != op_prev.queueNum) {assure_behind(&c, op_prev);}
-//     }
-// }
-
-
-void populate()
+void init_structs()
 {
-    for (size_t i = 0; i < N_QUEUES; i++)
+    for (size_t i = 0; i < SimVars::N_QUEUES; i++)
     {
         qs[i] = new ProfileQueue();
     }
-
-    for (size_t i = 0; i < N_THREADS; i++)
+    for (size_t i = 0; i < SimVars::N_THREADS; i++)
     {
-        // Thread::Configuration conf(Thread::SUSPENDED, Thread::Criterion::NORMAL, 
-        //     Traits<Application>::STACK_SIZE, static_cast<unsigned>(Random::random()));
-        // Thread *t = new Thread(conf, &work);
-        // ts[i] = t;
-        unsigned int random_d = static_cast<unsigned>(DEADLINE_CAP);
-        ts[i] = new DummyThread(random_d);
-        cout << "Deadline de thread "<< ts[i]->l <<": " << random_d << endl << endl;
+        ts[i] = new DummyThread(SimVars::DEADLINE_CAP);
 
         Optimal op = rank(ts[i]);
         ts[i]->cwt = op.cwt;
+
         ProfileElement* pe = new ProfileElement(ts[i]);
         pe->rank(ProfileQueue::Rank_Type(op.cwt));
         qs[op.queue_num]->insert(pe);
@@ -134,6 +109,7 @@ void populate()
     }
 }
 
+
 void round_robin_simulation()
 {
     TSC_Chronometer chronometer;
@@ -141,7 +117,7 @@ void round_robin_simulation()
     int count_change = 0;
 
     while (count_change <= max_change) {
-        for (size_t i = 0; i < N_QUEUES; i++){
+        for (size_t i = 0; i < SimVars::N_QUEUES; i++){
             count_change++;
             //round robin numa fila 
             ProfileQueue* queue = qs[i];
@@ -150,10 +126,10 @@ void round_robin_simulation()
             chronometer.start();
 
             for (ProfileQueue::Iterator it = queue->begin(); it != queue->end(); it++){
-                cout << "Executando thread" << it->object()->l << ": com deadline " << it->object()->d << " da fila " << i << endl;
+                cout << "Executando thread " << it->object()->l << ": com deadline " << it->object()->d << " da fila " << i << endl;
                 //logica do thread executando
                 //Alarm::delay(expected_wcet(i));>>
-                if (chronometer.read() >= 10000) {
+                if (chronometer.read() >= Q) {
                     cout << "Quantum de " << Q << " us atingido para a fila " << i << endl;
                     break;
                 }
@@ -164,10 +140,24 @@ void round_robin_simulation()
     }
 }
 
+
+void clean()
+{
+    for (DummyThread *t : ts)
+    {
+        delete t;
+    }
+    for (ProfileQueue *q : qs)
+    {
+        delete q;
+    }
+}
+
+
 int main()
 {
-    populate();
+    init_structs();
     round_robin_simulation();
-
+    clean();
     return 0;
 }

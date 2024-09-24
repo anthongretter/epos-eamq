@@ -94,6 +94,11 @@ template<> struct Traits<Application>: public Traits<Build>
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
     static const unsigned int HEAP_SIZE = Traits<Machine>::HEAP_SIZE;
     static const unsigned int MAX_THREADS = Traits<Machine>::MAX_THREADS;
+    // EAMQ simulation vars
+    static const unsigned int BASE_WCET = 20000;
+    static const unsigned int DEADLINE_CAP = BASE_WCET + 200000;
+    static const unsigned int N_QUEUES = 4;
+    static const unsigned int N_THREADS = 10;
 };
 
 template<> struct Traits<System>: public Traits<Build>
