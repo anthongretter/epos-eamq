@@ -52,7 +52,7 @@ DummyThread * ts[SimVars::N_THREADS];
 // Leva ponteiro para tras e recalcula rank e reposiona talvez
 void assure_behind(ProfileElement * inserted)
 {
-    // p3 p2 p1 inserted 
+    // t1 t2 t3 INSERTED ...
     for (ProfileElement * p = inserted->next(); p != nullptr;)
     {
         //salva p->next() no next
@@ -71,19 +71,42 @@ void assure_behind(ProfileElement * inserted)
     }
 }
 
+/**
+ * Assumimos que a thread que terminou de executar já foi retirada da fila
+ */
+void end_thread(ProfileQueue * queue) 
+{
+    ProfileElement * new_head = queue->head();
+    
+    // WCET esperado para este perfil
+    int wcet_profile = new_head->object()->wcet_remaining[new_head->object()->current_queue];
 
+    // Numero de ciclos do round profile para a proxima exec.
+    const int rp_rounds = (static_cast<float>(wcet_profile) / Q) == static_cast<int>((wcet_profile / Q)) ? (static_cast<int>((wcet_profile / Q)) - 1) : static_cast<int>((wcet_profile / Q) );
 
-/* 
+    // Tempo de espera do RP ate sua execucao, no pior caso (toda fila possui pelo menos uma thread)
+    // int rp_waiting_time = Q * (SimVars::N_QUEUES - 1) * (rp_rounds);
+    int rp_waiting_time = Q * (occupied_queues(qs, new_head->object()->current_queue)) * (rp_rounds);
+
+    // Atualiza o rank
+    new_head->object()->pe->rank(rp_waiting_time);
+    // Atualiza threads anterios
+    assure_behind(new_head);
+    
+}
+
+/* Troca de turnos circular entre as filas de perfis
 * */
-void round_robin_simulation(int max_change)
+void round_profile_simulation(int max_change)
 {
     // TSC_Chronometer chronometer;
     int count_change = 0;
 
     ProfileElement * running_thread = nullptr;
 
-    while (count_change <= max_change) {
-        for (size_t i = 0; i < SimVars::N_QUEUES; i++){
+    while (count_change < max_change) {
+        for (size_t i = 0; i < SimVars::N_QUEUES; i++)
+        {
 
             // Se fila vazia, pula
             if (qs[i]->empty()) continue;
@@ -92,38 +115,37 @@ void round_robin_simulation(int max_change)
             running_thread = qs[i]->head();
             qs[i]->remove(running_thread);
 
-            // Simula execução por um Quantum ou menos
-            int time_elapsed = running_thread->object()->wcet_remaining[i] < static_cast<int>(Q) ? running_thread->object()->wcet_remaining[i] : static_cast<int>(Q);
             // O objeto diminui seu wcet e sua deadline para simular passagem do tempo e execução
-            const bool end_thread = running_thread->object()->run_quantum(i, time_elapsed);
+            const bool has_finished = running_thread->object()->run_quantum(i);
 
             for (size_t j = 0; j < SimVars::N_QUEUES; j++)
             {
                 for (ProfileQueue::Iterator it = qs[j]->tail(); &(*it) != nullptr; it = it->prev())
                 {
                     // Outras threads que não estão em execução passam o tempo
-                    it->object()->pass_quantum(time_elapsed);
+                    it->object()->pass_quantum();
                 }
             }
 
             // Se a thread terminou, pula
-            if (end_thread) continue;
-            
+            if (has_finished) 
+            {
+                end_thread(qs[i]);
+                print_queues(qs, ts);
+                continue;
+            };
 
             // Se a thread não terminou, reinserir na fila
-            // Recalcula rank (assim como suas anteriores na fila)
-            running_thread->object()->rank(qs);
             // Reposiciona thread na fila 
             qs[running_thread->object()->current_queue]->insert(running_thread);
             
-            // count_change++;
-
             print_queues(qs, ts);
         }
         // Apenas para não rodar infinitamente enquanto não codamos as threads findando
         count_change++;
     }
 }
+
 
 void init_structs()
 {
@@ -136,18 +158,14 @@ void init_structs()
         ts[i] = new DummyThread(SimVars::DEADLINE_CAP);
 
         ts[i]->rank(qs);
-        //Optimal op = rank(ts[i]);
-        // ts[i]->cwt = op.cwt;
 
-        // ProfileElement* pe = new ProfileElement(ts[i]);
-
-        // "rankeando" inicialmente as threads
-        // pe->rank(ProfileQueue::Rank_Type(op.cwt));
-        // qs[op.queue_num]->insert(ts[i]->pe);
         qs[ts[i]->current_queue]->insert(ts[i]->pe);
         assure_behind(ts[i]->pe);
+
         print_queues(qs, ts);
-        round_robin_simulation(4);
+        
+        // para simular o escalonamento em conjunto a novas threads 
+        round_profile_simulation(2);
     }
 }
 
@@ -167,7 +185,7 @@ void clean()
 int main()
 {
     init_structs();
-    round_robin_simulation(20);
+    round_profile_simulation(20);
     clean();
     return 0;
 }
