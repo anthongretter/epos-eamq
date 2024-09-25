@@ -98,8 +98,10 @@ template<> struct Traits<Application>: public Traits<Build>
     // EAMQ simulation vars
     static const unsigned int BASE_WCET = 20000;
     static const unsigned int DEADLINE_CAP = BASE_WCET + 200000;
+    // Queue 0 -> 100%, Queue 1 -> 80%, Queue 2 -> 60%, Queue 3 -> 40%
     static const unsigned int N_QUEUES = 4;
-    static const unsigned int N_THREADS = 10;
+    static const unsigned int N_THREADS = 16;
+    static const unsigned int FREQ_STEP = 20;
 };
 
 template<> struct Traits<System>: public Traits<Build>
