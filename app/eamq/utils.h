@@ -18,11 +18,10 @@ typedef ProfileQueue::Rank_Type ProfileRank;
 
 typedef Traits<Application> SimVars;
 
- struct Optimal{
+ struct Optimal {
     unsigned int queue_num;
     unsigned int cwt;
 
-    // 
     Optimal(unsigned int q_num = -1, unsigned int cwt = 0) : queue_num(q_num), cwt(cwt) {}
 };
 
@@ -38,8 +37,6 @@ struct DummyThread {
     char l;
     unsigned int current_queue;
     int wcet_remaining[SimVars::N_QUEUES];
-
-    
 
     // Existem momentos inconsistentes entre current_queue e a fila real em que a DummyThread está inserida
     // Devemos fazer um booleano para indicar esses momentos?
@@ -77,12 +74,12 @@ struct DummyThread {
     * fila de perfil, com base na porcentagem da frequência em que a thread estaria atuando.
     * Retorna verdadeiro se a Thread terminou sua execução.
     * */
-    const bool run_quantum(const int f, const unsigned int time);
+    const bool run_quantum(const int f);
 
     /* Simula um quantum onde a thread não estaria em execução, ou seja, inativa.
     * Reduzindo o deadline a fim de simular o tempo passando.
     * */
-    void pass_quantum(const unsigned int time);
+    void pass_quantum();
 };
 
 void print_queues(ProfileQueue* (&qs)[SimVars::N_QUEUES], DummyThread* (&ts)[SimVars::N_THREADS])
@@ -101,16 +98,18 @@ void print_queues(ProfileQueue* (&qs)[SimVars::N_QUEUES], DummyThread* (&ts)[Sim
 }
 
 /**
- * Retorna o numero de filas ocupadas 
- */
-int occupied_queues(ProfileQueue* (&qs)[SimVars::N_QUEUES])
+* Retorna o numero de filas ocupadas
+* F simboliza a fila que está sendo analisada
+*/
+int occupied_queues(ProfileQueue* (&qs)[SimVars::N_QUEUES] , int f)
+
 {
     int oc = 0;
     for (ProfileQueue* q : qs)
     {
         oc += int(!q->empty());
     }
-    return oc;
+    return oc == 0 ? oc : (qs[f]->empty() ? oc : oc - 1);
 }
 
 void DummyThread::rank(ProfileQueue* (&qs)[SimVars::N_QUEUES]) 
@@ -126,21 +125,21 @@ void DummyThread::rank(ProfileQueue* (&qs)[SimVars::N_QUEUES])
         int wcet_profile = this->wcet_remaining[f];
         cout << "WCET of " << this->l << ": " << wcet_profile << " em " << f << endl;
 
-        // Numero de ciclos do round robin para a proxima exec.
+        // Numero de ciclos do round profile para a proxima exec.
         // cout << "WCET/Q = " << (static_cast<float>(wcet_profile) / Q) << endl;
-        const int rr_rounds = (static_cast<float>(wcet_profile) / Q) == static_cast<int>((wcet_profile / Q)) ? (static_cast<int>((wcet_profile / Q)) - 1) : static_cast<int>((wcet_profile / Q) );
-        //cout << "Round robin rounds to wait " << this->l << ": " << rr_rounds << endl;
+        const int rp_rounds = (static_cast<float>(wcet_profile) / Q) == static_cast<int>((wcet_profile / Q)) ? (static_cast<int>((wcet_profile / Q)) - 1) : static_cast<int>((wcet_profile / Q) );
+        //cout << "Round profile rounds to wait " << this->l << ": " << rp_rounds << endl;
 
         // Tempo de espera do RR ate sua execucao, no pior caso (toda fila possui pelo menos uma thread)
-        // int rr_waiting_time = Q * (SimVars::N_QUEUES - 1) * (rr_rounds);
-        int rr_waiting_time = Q * (occupied_queues(qs)) * (rr_rounds);
-        cout << "Round robin waiting time " << this->l << ": " << rr_waiting_time << endl;
+        // int rp_waiting_time = Q * (SimVars::N_QUEUES - 1) * (rp_rounds);
+        int rp_waiting_time = Q * (occupied_queues(qs, f)) * (rp_rounds);
+        cout << "Round profile waiting time " << this->l << ": " << rp_waiting_time << endl;
 
-        // Tail??? acessar elementos da fila de maior deadline -> menor deadline
+        // Acessar elementos da fila tenha tempo de espera < deadline 
         for (ProfileElement* elem = queue->tail(); elem; elem = elem->prev()) {
             DummyThread* thread_in_queue = elem->object();
-            //cwt + wcet_restante*15% (margem extra para não chegar no limite) < deadline
-            if (!t_fitted || (thread_in_queue->pe->rank() + static_cast<int>(thread_in_queue->wcet_remaining[f]*1.15) + this->wcet_remaining[f]) + rr_waiting_time < this->d ) {
+            //cwt + wcet_restante*15% (margem extra para não chegar no limite) + wcet(dele) + RP(dele) < deadline
+            if (!t_fitted || (thread_in_queue->pe->rank() + static_cast<int>(thread_in_queue->wcet_remaining[f]*1.15) + this->wcet_remaining[f]) + rp_waiting_time < this->d ) {
                 // Thread para fixar (referencial), para inserir novo thread na fila 
                 // T4 - T3 - "INSERIR AQUI" -  T_fitted - T1
                 t_fitted = elem;
@@ -149,7 +148,7 @@ void DummyThread::rank(ProfileQueue* (&qs)[SimVars::N_QUEUES])
         }
         // cwt = cwt frente (RR + wcet) + RR dele 
         // Tempo de espera atual desta fila = tempo de espera (RR) + cwt (RR + wcet) do da frente
-        int cwt_profile = rr_waiting_time + (t_fitted ? static_cast<int>(t_fitted->object()->pe->rank() + t_fitted->object()->wcet_remaining[f]) : 0);
+        int cwt_profile = rp_waiting_time + (t_fitted ? static_cast<int>(t_fitted->object()->pe->rank() + t_fitted->object()->wcet_remaining[f]) : 0);
         cout << "Total waiting time of " << this->l << ": " << cwt_profile << endl;
 
         // Tempo de execução disponivel, dada espera nesta fila
@@ -172,25 +171,25 @@ void DummyThread::rank(ProfileQueue* (&qs)[SimVars::N_QUEUES])
     current_queue = optimal.queue_num;
 }
 
-const bool DummyThread::run_quantum(const int f, const unsigned int time)
+const bool DummyThread::run_quantum(const int f)
 {
     for (unsigned int i = 0; i < SimVars::N_QUEUES; i++)
     {
         // f -> numero da fila que estava executando anteriormente
         // i -> numero da fila atual
-        cout << ((100.0 - (f * SimVars::FREQ_STEP)) / (100.0 - (i * SimVars::FREQ_STEP))) * time << endl;
-        wcet_remaining[i] -= ((100.0 - (f * SimVars::FREQ_STEP)) / (100.0 - (i * SimVars::FREQ_STEP))) * time;
+        // cout << ((100.0 - (f * SimVars::FREQ_STEP)) / (100.0 - (i * SimVars::FREQ_STEP))) * Q << endl;
+        wcet_remaining[i] -= ((100.0 - (f * SimVars::FREQ_STEP)) / (100.0 - (i * SimVars::FREQ_STEP))) * Q;
         if (wcet_remaining[i] <= 0) {return true;}
     }
     
     // Diminui a deadline para simular o tempo passando
-    d -= time;
+    d -= Q;
 
     return false;
 }
 
-void DummyThread::pass_quantum(const unsigned int time)
+void DummyThread::pass_quantum()
 {
     // Diminui a deadline para simular o tempo passando
-    d -= time;
+    d -= Q;
 }
