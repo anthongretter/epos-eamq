@@ -275,52 +275,47 @@ public:
     void handle(Event event);
 };
 
+
 // Energy Aware Multi Queue
-// class EAMQ: public Priority
-// /* Coisas ainda não pensadas para implementação, coloquem coisas aqui:
-//  *      - como rankear novamente após cada prempção (cada quantum)?
-//  *          - deixei um comment na reschedule da thread de ideias
-//  *      - 
-//  * */
-// {
-//     public:
-//         static const unsigned int QUEUES = 4 // or maybe a trait?
+class EAMQ: public RT_Common
+{
+    friend class Scheduler<Thread>;
 
-//         // Por conta da implementação da multilist, acredito que o numero de filas seja declarado aqui
-//         static const unsigned int QUEUES = 4 // or maybe a trait?
+    typedef Scheduler<Thread>::Base Queue; 
 
-//         static const bool timed = true;
-//         static const bool dynamic = true;
-//         static const bool preemptive = true;
+    public:
+        static const unsigned short QUEUES = 4; // or maybe a trait?
 
-//     public:
-//         // aqui, ele vai retornar o indice na fila atual (pelo q entendi),
-//         // mas devemos talvez alterar para que a fila "optimal" seja a referenciada  
-//         EAMQ(int p = NORMAL, const Microsecond & d): Priority(rank()) {}
+        //static const bool timed = true;
+        static const bool dynamic = true;
+        //static const bool preemptive = true;
 
-//         template <typename T>
-//         static int rank(T obj);         // talvez colocar deadline e outros como parametro
-//                                         // para pegar a thread de maior deadline, basta um .tail
-//                                         // muitas coisas vao ter q ser implementadas no dispatch creio eu
+    public:
+        // rever
+        EAMQ(int p = APERIODIC): RT_Common(p) {}
+        EAMQ(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN);
 
-//         unsigned int queue() const;
-//         static unsigned int current_queue();
-//         void next_queue();
-// };
+        // template <typename T>
+        // static int rank(T obj);
+
+        unsigned int queue() const;             // metodo usado para retornar o index da sublista que um elemento sera inserido
+        static unsigned int current_queue();    // sublista atual em que sera retirado o head no "choosen"
+        // void next_queue();
+        void handle_rank();
+};
 
 __END_SYS
 
-// __BEGIN_UTIL
+__BEGIN_UTIL
 
 // /* Então,
 //  * Parece que já existe uma implementação de fila com mais "filas". Uhuul
 //  * Ela meio q particiona uma fila em diversas, e mantem um ponteiro a atual.
 //  * O comentário da Scheduling_Multilist mostra oq deve ser implementado no critério (Priority) 
 //  * */
-// template<typename T>
-// class Scheduling_Queue<T, EAMQ>:
-// public Scheduling_Multilist<T> {};
+template<typename T>
+class Scheduling_Queue<T, EAMQ>: public Scheduling_Multilist<T> {};
 
-// __END_UTIL
+__END_UTIL
 
 #endif

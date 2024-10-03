@@ -97,6 +97,9 @@ LLF::LLF(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(elapsed() +
 void LLF::handle(Event event) {
     if(periodic() && ((event & UPDATE) | (event & JOB_RELEASE) | (event & JOB_FINISH))) {
         _priority = elapsed() + _deadline - _capacity + _statistics.job_utilization;
+        // tempo atual + deadline = ponto real de deadline
+        // capacidade ("total" do job executar) + o que ja foi executado = restante a executar
+        // ponto real de deadline - restante a executar = slack
     }
     RT_Common::handle(event);
 
