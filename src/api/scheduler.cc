@@ -2,6 +2,8 @@
 
 #include <process.h>
 #include <time.h>
+#include "scheduler.h"
+
 
 __BEGIN_SYS
 
@@ -98,8 +100,8 @@ void LLF::handle(Event event) {
     if(periodic() && ((event & UPDATE) | (event & JOB_RELEASE) | (event & JOB_FINISH))) {
         _priority = elapsed() + _deadline - _capacity + _statistics.job_utilization;
         // tempo atual + deadline = ponto real de deadline
-        // capacidade ("total" do job executar) + o que ja foi executado = restante a executar
-        // ponto real de deadline - restante a executar = slack
+        // capacidade (restante do job executar) + o que ja foi executado = total a executar
+        // ponto real de deadline - total a executar = slack
     }
     RT_Common::handle(event);
 
@@ -109,5 +111,15 @@ void LLF::handle(Event event) {
 
 // Since the definition of FCFS above is only known to this unit, forcing its instantiation here so it gets emitted in scheduler.o for subsequent linking with other units is necessary.
 template FCFS::FCFS<>(int p);
+
+
+EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c) {}
+
+void EAMQ::handle(Scheduling_Criterion_Common::Event event) {
+    if(periodic() && ((event & UPDATE) | (event & JOB_RELEASE) | (event & JOB_FINISH))) {
+
+    }
+    RT_Common::handle(event);
+}
 
 __END_SYS

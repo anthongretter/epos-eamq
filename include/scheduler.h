@@ -279,16 +279,10 @@ public:
 // Energy Aware Multi Queue
 class EAMQ: public RT_Common
 {
-    friend class Scheduler<Thread>;
-
-    typedef Scheduler<Thread>::Base Queue; 
-
     public:
         static const unsigned short QUEUES = 4; // or maybe a trait?
 
-        //static const bool timed = true;
         static const bool dynamic = true;
-        //static const bool preemptive = true;
 
     public:
         // rever
@@ -298,21 +292,21 @@ class EAMQ: public RT_Common
         // template <typename T>
         // static int rank(T obj);
 
-        unsigned int queue() const;             // metodo usado para retornar o index da sublista que um elemento sera inserido
-        static unsigned int current_queue();    // sublista atual em que sera retirado o head no "choosen"
-        // void next_queue();
-        void handle_rank();
+        unsigned int queue() const { return _queue; };      // returns the Thread's queue
+        void handle(Event event);
+
+        static unsigned int current_queue() { return _current_queue; };     // current global queue
+        static void next_queue() { ++_current_queue %= QUEUES; };           // points to next global queue
+
+    protected:
+        volatile unsigned int _queue;               // Thread's current queue
+        static volatile unsigned _current_queue;    // Current global queue
 };
 
 __END_SYS
 
 __BEGIN_UTIL
 
-// /* Então,
-//  * Parece que já existe uma implementação de fila com mais "filas". Uhuul
-//  * Ela meio q particiona uma fila em diversas, e mantem um ponteiro a atual.
-//  * O comentário da Scheduling_Multilist mostra oq deve ser implementado no critério (Priority) 
-//  * */
 template<typename T>
 class Scheduling_Queue<T, EAMQ>: public Scheduling_Multilist<T> {};
 

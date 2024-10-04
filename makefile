@@ -196,4 +196,15 @@ dist: veryclean
 		find $(TOP) -name "*.S" -print | xargs sed -i "1r $(ETC)/license.txt.as"
 		$(CLEAN) $(ETC)/license.as
 
+dimage:
+	docker build -t epos $(TOP)
+
+dclean:
+	docker stop epos || true
+	docker rm epos || true
+
+drun: dimage dclean
+	docker run -itd --privileged --cap-add=ALL -v $(TOP):/app --name epos epos
+	docker exec -it epos /bin/bash
+
 FORCE:
