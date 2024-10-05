@@ -122,4 +122,48 @@ void EAMQ::handle(Scheduling_Criterion_Common::Event event) {
     RT_Common::handle(event);
 }
 
+// EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(rank_eamq(p, d, c)), p, d, c) {}
+
+// int EAMQ::occupied_queues(int f)
+//         {
+//             int oc = 0;
+//             for (unsigned int i = 0; i < QUEUES; i++)
+//             {
+//                 oc += int(!_multilist[i]->empty());
+//             }
+//             return oc == 0 ? oc : (_multilist[f]->empty() ? oc : oc - 1);
+//         }
+
+// int EAMQ::rank_eamq(Microsecond p, Microsecond d, Microsecond c) {
+//     int queue_chosen = NULL;
+//     int new_rank = NULL;
+//     for(unsigned int i = 0; i < QUEUES; i++) {
+//         Thread * t_fitted = nullptr;
+//         // pega EET = tempo estimado de execucao (capacity??)
+//         //int eet = get_eet(i);
+//         const int rp_rounds = (static_cast<float>(eet) / Q) == static_cast<int>((eet / Q)) ? (static_cast<int>((eet / Q)) - 1) : static_cast<int>((eet / Q) );
+        
+//         int rp_waiting_time = Q * (occupied_queues(i)) * (rp_rounds);
+//         for(auto it = _multilist[i].tail(); it != _multilist[i].head(); it = it->prev()) {
+//             Thread * thread_in_queue = it->object();
+//             if (thread_in_queue->pe->rank() + static_cast<int>(thread_in_queue->eet_remaining[f]*1.15) + this->eet_remaining[f]+ rp_waiting_time < d) {
+//                 t_fitted = it;
+//                 break;
+//             }
+//         }
+//         // precisa ver como vai ser dados de cada threads (deadline nao tem como acessar -> protegido)
+//         // se vai criar atributos novos para threads 
+//         int cwt_profile = rp_waiting_time + (t_fitted ? static_cast<int>(t_fitted->rank() + t_fitted->wcet_remaining[f]) : 0);
+//         int available_time_to_run = d - cwt_profile;
+//         int idle_time = available_time_to_run - eet;
+//         if (idle_time >= 0) {
+//             queue_chosen = f;
+//             new_rank = cwt_profile;
+//         }
+//     }
+//     // algum jeito de escolher a fila para inserir
+//     //current_queue();
+//     return new_rank;
+// }
+
 __END_SYS

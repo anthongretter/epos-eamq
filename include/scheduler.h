@@ -281,7 +281,7 @@ class EAMQ: public RT_Common
 {
     public:
         static const unsigned short QUEUES = 4; // or maybe a trait?
-
+        const unsigned int Q = Traits<Thread>::QUANTUM;
         static const bool dynamic = true;
 
     public:
@@ -297,10 +297,14 @@ class EAMQ: public RT_Common
 
         static unsigned int current_queue() { return _current_queue; };     // current global queue
         static void next_queue() { ++_current_queue %= QUEUES; };           // points to next global queue
+        int rank_eamq(Microsecond p, Microsecond d, Microsecond c);
+        int occupied_queues();
 
     protected:
         volatile unsigned int _queue;               // Thread's current queue
         static volatile unsigned _current_queue;    // Current global queue
+        Scheduling_Multilist<Thread> _multilist[QUEUES]; // nao sei se funciona assim 
+
 };
 
 __END_SYS
