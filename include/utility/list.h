@@ -1280,6 +1280,7 @@ public:
     Scheduling_Multilist() {}
 
     bool empty() const { return _list[R::current_queue()].empty(); }
+    bool empty(unsigned int queue) { return _list[queue].empty(); }
 
     unsigned long size() const { return _list[R::current_queue()].size(); }
     unsigned long size(unsigned int queue) const { return _list[queue].size(); }

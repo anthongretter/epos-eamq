@@ -117,7 +117,7 @@ EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(elapsed()
 
 void EAMQ::handle(Scheduling_Criterion_Common::Event event) {
     if(periodic() && ((event & UPDATE) | (event & JOB_RELEASE) | (event & JOB_FINISH))) {
-
+        // update rank
     }
     RT_Common::handle(event);
 }

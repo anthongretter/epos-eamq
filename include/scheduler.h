@@ -279,32 +279,60 @@ public:
 // Energy Aware Multi Queue
 class EAMQ: public RT_Common
 {
+
     public:
         static const unsigned short QUEUES = 4; // or maybe a trait?
-        const unsigned int Q = Traits<Thread>::QUANTUM;
+        static const unsigned int Q = Traits<Thread>::QUANTUM;
         static const bool dynamic = true;
 
     public:
-        // rever
+        // Nao entendi onde eh chamado o construtor dos Criterium??
         EAMQ(int p = APERIODIC): RT_Common(p) {}
         EAMQ(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN);
 
-        // template <typename T>
-        // static int rank(T obj);
+        // Para cada thread
+        struct MultiQueue_Statistics {
+            int relative_capacities[QUEUES];
+        };
 
-        unsigned int queue() const { return _queue; };      // returns the Thread's queue
-        void handle(Event event);
-
-        static unsigned int current_queue() { return _current_queue; };     // current global queue
-        static void next_queue() { ++_current_queue %= QUEUES; };           // points to next global queue
-        int rank_eamq(Microsecond p, Microsecond d, Microsecond c);
-        int occupied_queues();
+        struct GlobalQueue_Statistics {
+            // podemos assim dar track na thread de maior tempo de espera de cada subfila
+            // e, ao mesmo tempo, se a fila esta ocupada
+            // ai talvez nao precisariamos ter a fila em si
+            int longest_in_queue[QUEUES];
+        };
 
     protected:
-        volatile unsigned int _queue;               // Thread's current queue
-        static volatile unsigned _current_queue;    // Current global queue
-        Scheduling_Multilist<Thread> _multilist[QUEUES]; // nao sei se funciona assim 
+        void handle(Event event);       // AQUI QUE VAI SER REAVALIADO, OLHEM O dispatch da Thread, linha 408
+                                        // ent devemos filtrar pra cada evento oq fazer: a que executou ficar no mesmo lugar
+                                        // e outras atualizar statistics dinamicos, como deadline e capacity relativo a frequencia,
+                                        // a thread de maior tempo de espera, etc.
 
+        const volatile unsigned int & queue() const volatile { return _queue; };    // returns the Thread's queue
+
+        int rank_eamq(Microsecond p, Microsecond d, Microsecond c); // creio q possa ser o construtor
+        int occupied_queues();                  // podemos dar track nisso nas estatisticas
+        int get_eet(unsigned int profile);      // calcular o capacity esperado naquela frequencia?
+                                                // isto eh viavel?
+
+        static unsigned int current_queue() { return _current_queue; };             // current global queue
+        static void next_queue() { ++_current_queue %= QUEUES; };                   // points to next global queue
+
+    protected:
+        volatile unsigned int _queue;                       // Thread's current queue
+        MultiQueue_Statistics _queue_relative_statistics;
+
+        static volatile unsigned _current_queue;            // Current global queue
+        static GlobalQueue_Statistics _global_statistics;
+
+        // Scheduling_Multilist<Thread> _multilist[QUEUES]; // nao sei se funciona assim 
+        // assim vc vai estar instanciando de novo
+        // 
+        // os unicos jeitos que eu vejo de usarmos, eh por parametro (meme pq afeta os outros algoritmos)
+        // ou por meio de um metodo estatico: Thread::scheduler() (ja fiz)
+        //
+        // manter estaticamente a referencia da fila aqui n funfa, pq n se resolve qual implementacao fila
+        // (no nosso caso eh a Scheduling_Multilist)
 };
 
 __END_SYS

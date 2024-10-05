@@ -88,6 +88,7 @@ public:
     void resume();
 
     static Thread * volatile self() { return running(); }
+    static Scheduler<Thread> * volatile scheduler() { return &_scheduler; }
     static void yield();
     static void exit(int status = 0);
 
