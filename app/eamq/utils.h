@@ -109,6 +109,9 @@ int occupied_queues(ProfileQueue* (&qs)[SimVars::N_QUEUES] , int f)
     {
         oc += int(!q->empty());
     }
+
+    // 3 ocupado, onde vai inserir nao ocupado -> 3
+    // 3 ocupado, onde vai inserir ocupado ->  3 - 1 = 2
     return oc == 0 ? oc : (qs[f]->empty() ? oc : oc - 1);
 }
 

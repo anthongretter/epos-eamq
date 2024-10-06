@@ -290,16 +290,15 @@ class EAMQ: public RT_Common
         EAMQ(int p = APERIODIC): RT_Common(p) {}
         EAMQ(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN);
 
+        MultiQueue_Statistics get_mq_statistics() { return _queue_relative_statistics; }
+
         // Para cada thread
         struct MultiQueue_Statistics {
-            int relative_capacities[QUEUES];
+            int capacities[QUEUES];
         };
-
+        // global
         struct GlobalQueue_Statistics {
-            // podemos assim dar track na thread de maior tempo de espera de cada subfila
-            // e, ao mesmo tempo, se a fila esta ocupada
-            // ai talvez nao precisariamos ter a fila em si
-            int longest_in_queue[QUEUES];
+            bool occ_queue[QUEUES];
         };
 
     protected:
@@ -309,31 +308,48 @@ class EAMQ: public RT_Common
                                         // a thread de maior tempo de espera, etc.
 
         const volatile unsigned int & queue() const volatile { return _queue; };    // returns the Thread's queue
+        void set_queue(unsigned int q) { _queue = q; };
 
-        int rank_eamq(Microsecond p, Microsecond d, Microsecond c); // creio q possa ser o construtor
-        int occupied_queues();                  // podemos dar track nisso nas estatisticas
-        int get_eet(unsigned int profile);      // calcular o capacity esperado naquela frequencia?
-                                                // isto eh viavel?
+        int rank_eamq(Microsecond p, Microsecond d, Microsecond c); // creio q possa ser o construtor    
 
         static unsigned int current_queue() { return _current_queue; };             // current global queue
         static void next_queue() { ++_current_queue %= QUEUES; };                   // points to next global queue
 
     protected:
-        volatile unsigned int _queue;                       // Thread's current queue
+        volatile unsigned int _queue;                       // Thread's current queue (usado pra inserir em fila tal)
         MultiQueue_Statistics _queue_relative_statistics;
 
-        static volatile unsigned _current_queue;            // Current global queue
+        static volatile unsigned _current_queue;            // Current global queue (usado pra retirar o proximo a executar)
         static GlobalQueue_Statistics _global_statistics;
 
-        // Scheduling_Multilist<Thread> _multilist[QUEUES]; // nao sei se funciona assim 
-        // assim vc vai estar instanciando de novo
-        // 
-        // os unicos jeitos que eu vejo de usarmos, eh por parametro (meme pq afeta os outros algoritmos)
-        // ou por meio de um metodo estatico: Thread::scheduler() (ja fiz)
-        //
-        // manter estaticamente a referencia da fila aqui n funfa, pq n se resolve qual implementacao fila
-        // (no nosso caso eh a Scheduling_Multilist)
+    private:
+        int estimate_rp_waiting_time(unsigned int eet_profile);
+        // int search_fittest_place(int rp_waiting_time)
 };
+
+EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int looking_queue) {
+    const int rp_rounds = static_cast<int>((eet_profile / Q)) 
+    if ((static_cast<float>(eet_profile) / Q) == rp_rounds) {
+        rp_rounds--;
+    }
+
+    int oc = 0;
+    for (unsigned int i = 0; i < QUEUES; i++)
+    {
+        if (i == looking_queue && !_global_statistics.occ_queue[looking_queue]) {
+            continue;
+        }
+        oc += int(_global_statistics.occ_queue[i]);
+    }
+    //se ocupado != 0 -> fila que receberá tarefa é vazia? Se sim: mantém e se não: ocupado - 1 
+    // oc = oc == 0 
+    //     ? oc 
+    //     : (!_global_statistics.occ_queue[looking_queue] ? oc : oc - 1);
+        
+    int rp_waiting_time = Q * (oc) * (rp_rounds);
+
+    return rp_waiting_time;
+}
 
 __END_SYS
 

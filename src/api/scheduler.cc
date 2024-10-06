@@ -113,57 +113,69 @@ void LLF::handle(Event event) {
 template FCFS::FCFS<>(int p);
 
 
-EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c) {}
+EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(rank_eamq(p, d, c)), p, d, c) {}
 
-void EAMQ::handle(Scheduling_Criterion_Common::Event event) {
-    if(periodic() && ((event & UPDATE) | (event & JOB_RELEASE) | (event & JOB_FINISH))) {
-        // update rank
-    }
-    RT_Common::handle(event);
+EAMQ::handle(Event event) {
+    // if (event & CREATE) {
+    //     for (int i = 0; i < QUEUES; i++)
+    //     {
+    //         // calcular _queue_relative_statistics.capacities[i] com base na porcentagem da freq
+    //         // _queue_relative_statistics.capacities[i] = ((100.0 - (f * SimVars::FREQ_STEP)) / (100.0 - (i * SimVars::FREQ_STEP)))
+    //     }
+        
+    // }
+    // if (event & UPDATE) {
+    //     if (mudou em sua fila && em frente) {
+    //         recalcular rank
+    //     }
+    // }
+    // ver oq fazer nos outros eventos (entrada e saida de thread)
 }
 
-// EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(rank_eamq(p, d, c)), p, d, c) {}
+int EAMQ::rank_eamq(Microsecond p, Microsecond d, Microsecond c) {
 
-// int EAMQ::occupied_queues(int f)
-//         {
-//             int oc = 0;
-//             for (unsigned int i = 0; i < QUEUES; i++)
-//             {
-//                 oc += int(!_multilist[i]->empty());
-//             }
-//             return oc == 0 ? oc : (_multilist[f]->empty() ? oc : oc - 1);
-//         }
+    // Caso de deadline = 0 e periodo = 0 -> atribuir rank para deixar no ultimo da fila
+    // Se tarefa é periodica com deadline = 0 -> podemos usar periodo como deadline (?)
 
-// int EAMQ::rank_eamq(Microsecond p, Microsecond d, Microsecond c) {
-//     int queue_chosen = NULL;
-//     int new_rank = NULL;
-//     for(unsigned int i = 0; i < QUEUES; i++) {
-//         Thread * t_fitted = nullptr;
-//         // pega EET = tempo estimado de execucao (capacity??)
-//         //int eet = get_eet(i);
-//         const int rp_rounds = (static_cast<float>(eet) / Q) == static_cast<int>((eet / Q)) ? (static_cast<int>((eet / Q)) - 1) : static_cast<int>((eet / Q) );
+    int new_rank = NULL;
+    for(unsigned int i = 0; i < QUEUES; i++) {
+        Thread * t_fitted = nullptr;
+
+        // tempo de execução restante
+        int eet_remaining = _queue_relative_statistics.capacities[i];
+
+        // // tempo de execução relativo a frequência 
+        // int eet_profile = calculate_profile_eet(i);
+        // calcula round profile waiting time 
+        int rp_waiting_time = estimate_rp_waiting_time(eet_remaining, i);
+
+        for(auto it = Thread::scheduler()->end(i); it != Thread::scheduler()->begin(i); it = it->prev()) {
+            Thread * thread_in_queue = it->object();
+            // Thread da frente -> Tf
+            // Thread que será inserido -> Ti
+            int thread_capacity_remaining = thread_in_queue->criterion()->get_mq_statistics().capacities[i];
+            int total_time_execution = thread_in_queue->priority()      //tempo de espera da (Tf)
+                    + static_cast<int>(thread_capacity_remaining*1.15)  //tempo de execução da (Tf)
+                    + eet_remaining                                     //tempo de execução (Ti)
+                    + rp_waiting_time;                                  //tempo de espera por RP (Ti)
+                    
+            if (total_time_execution < d) {
+                t_fitted = thread_in_queue;
+                break;
+            }
+        }
         
-//         int rp_waiting_time = Q * (occupied_queues(i)) * (rp_rounds);
-//         for(auto it = _multilist[i].tail(); it != _multilist[i].head(); it = it->prev()) {
-//             Thread * thread_in_queue = it->object();
-//             if (thread_in_queue->pe->rank() + static_cast<int>(thread_in_queue->eet_remaining[f]*1.15) + this->eet_remaining[f]+ rp_waiting_time < d) {
-//                 t_fitted = it;
-//                 break;
-//             }
-//         }
-//         // precisa ver como vai ser dados de cada threads (deadline nao tem como acessar -> protegido)
-//         // se vai criar atributos novos para threads 
-//         int cwt_profile = rp_waiting_time + (t_fitted ? static_cast<int>(t_fitted->rank() + t_fitted->wcet_remaining[f]) : 0);
-//         int available_time_to_run = d - cwt_profile;
-//         int idle_time = available_time_to_run - eet;
-//         if (idle_time >= 0) {
-//             queue_chosen = f;
-//             new_rank = cwt_profile;
-//         }
-//     }
-//     // algum jeito de escolher a fila para inserir
-//     //current_queue();
-//     return new_rank;
-// }
+        int t_fitted_capacity_remaining = t_fitted->criterion()->get_mq_statistics().capacities[i];
+        int cwt_profile = rp_waiting_time + (t_fitted ? static_cast<int>(t_fitted->priority() + t_fitted_capacity_remaining) : 0);
+        int available_time_to_run = d - cwt_profile;
+        int idle_time = available_time_to_run - eet_remaining;
+
+        if (idle_time >= 0) {
+            set_queue(f);
+            new_rank = cwt_profile;
+        }
+    }
+    return new_rank;
+}
 
 __END_SYS
