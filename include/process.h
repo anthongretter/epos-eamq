@@ -122,6 +122,19 @@ protected:
                 i->object()->criterion().handle(event);
     }
 
+
+    // Tiramos o event da lista de argumentos pois ele pode receber o trigger no CREATE também
+    // não faz sentido passarmos CREATE para as outras threads, o EVENT é sempre um UPDATE
+
+    // Usado para atualizar os elementos partir de current para tras, da atual fila 
+    static void for_all_behind(Queue::Iterator current) {
+        int queue = current->object()->criterion().queue();
+        for (; current != _scheduler.end(queue); current++)
+        {
+            current->object()->criterion().handle(Criterion::UPDATE);
+        }
+    }
+
     static int idle();
 
 private:

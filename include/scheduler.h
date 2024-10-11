@@ -290,47 +290,77 @@ class EAMQ: public RT_Common
         EAMQ(int p = APERIODIC): RT_Common(p) {}
         EAMQ(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN);
 
-        MultiQueue_Statistics get_mq_statistics() { return _queue_relative_statistics; }
-
         // Para cada thread
-        struct MultiQueue_Statistics {
-            int capacities[QUEUES];
+        struct Personal_Statistics {
+            Tick remaining_capacities[QUEUES];
+            Tick accumulated_et;
+            
+            Tick job_last_et;                // periodic ultimo tempo de exec
+            Tick job_estimated_et[QUEUES];   // media 
+
+            Tick start_time; // tempo que começa executar tarefa
+            Tick total_execution_time; // tempo de execução da tarefa
+            Tick average_et; // tempo de execução média ponderada 
         };
         // global
-        struct GlobalQueue_Statistics {
-            bool occ_queue[QUEUES];
+        struct Global_Statistics {
+            bool occ_queue[QUEUES];     // rever se precisa, se sim, atualizar toda insercaos
+            // int last_thread_et;
+            Tick estipulated_capacity;
+            Tick last_job_dispatch;
+
+            Criterion last_modification_record[QUEUES]; 
+        };
+        struct Optimal_Case {
+            int queue; 
+            int cwt;
         };
 
-    protected:
         void handle(Event event);       // AQUI QUE VAI SER REAVALIADO, OLHEM O dispatch da Thread, linha 408
                                         // ent devemos filtrar pra cada evento oq fazer: a que executou ficar no mesmo lugar
                                         // e outras atualizar statistics dinamicos, como deadline e capacity relativo a frequencia,
                                         // a thread de maior tempo de espera, etc.
 
+        Personal_Statistics get_personal_statistics() { return _personal_statistics; }
+
+        const bool is_recent_insertion() {return _is_recent_insertion; }
+        void is_recent_insertion(bool b) { _is_recent_insertion = b; }
+
+        static unsigned int current_queue() { return _current_queue; };             // current global queue
         const volatile unsigned int & queue() const volatile { return _queue; };    // returns the Thread's queue
+
+    protected:
+
         void set_queue(unsigned int q) { _queue = q; };
 
         int rank_eamq(Microsecond p, Microsecond d, Microsecond c); // creio q possa ser o construtor    
 
-        static unsigned int current_queue() { return _current_queue; };             // current global queue
         static void next_queue() { ++_current_queue %= QUEUES; };                   // points to next global queue
 
     protected:
         volatile unsigned int _queue;                       // Thread's current queue (usado pra inserir em fila tal)
-        MultiQueue_Statistics _queue_relative_statistics;
+        volatile bool _is_recent_insertion;
+        Personal_Statistics _personal_statistics;
 
         static volatile unsigned _current_queue;            // Current global queue (usado pra retirar o proximo a executar)
-        static GlobalQueue_Statistics _global_statistics;
+        static Global_Statistics _global_statistics;
 
     private:
-        int estimate_rp_waiting_time(unsigned int eet_profile);
+        int estimate_rp_waiting_time(unsigned int eet_profile, unsigned int i);
         // int search_fittest_place(int rp_waiting_time)
 };
 
-EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int looking_queue) {
-    const int rp_rounds = static_cast<int>((eet_profile / Q)) 
-    if ((static_cast<float>(eet_profile) / Q) == rp_rounds) {
-        rp_rounds--;
+int EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int looking_queue) {
+    // const int rp_rounds = static_cast<int>((eet_profile / Q));
+    // if ((static_cast<float>(eet_profile) / Q) == rp_rounds) {
+    //     rp_rounds--;
+    // }
+
+    int rp_rounds = eet_profile/Q;
+
+    // Se precisar de uma rodada extra com um tamanho menor que o Quantum
+    if (eet_profile % Q) {
+        rp_rounds++;
     }
 
     int oc = 0;
@@ -341,10 +371,6 @@ EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int looking_qu
         }
         oc += int(_global_statistics.occ_queue[i]);
     }
-    //se ocupado != 0 -> fila que receberá tarefa é vazia? Se sim: mantém e se não: ocupado - 1 
-    // oc = oc == 0 
-    //     ? oc 
-    //     : (!_global_statistics.occ_queue[looking_queue] ? oc : oc - 1);
         
     int rp_waiting_time = Q * (oc) * (rp_rounds);
 
