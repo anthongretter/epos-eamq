@@ -117,7 +117,6 @@ EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(rank_eamq(p, 
 
 void EAMQ::handle(Event event) {
     if (event & CREATE) {
-
         //Thread::for_all_behind();
         // for (int i = 0; i < QUEUES; i++)
         // {
@@ -149,9 +148,10 @@ void EAMQ::handle(Event event) {
             // ATENCAO!! Não sei se esse if funciona, se esse valor é 0 mesmo no inicio 
             if (_personal_statistics.prev_execution_time == 0) {_personal_statistics.prev_execution_time = _personal_statistics.total_execution_time;}
             // (tempo de execução anterior + tempo de execução atual) / 2
-            _personal_statistics.avarage_et = (_personal_statistics.prev_time + _personal_statistics.total_execution_time) / 2;
+            _personal_statistics.average_et = (_personal_statistics.prev_execution_time + _personal_statistics.total_execution_time) / 2;
             _personal_statistics.prev_execution_time = _personal_statistics.total_execution_time;
             _personal_statistics.total_execution_time = 0;
+            // Fazer calculo relativo para cada frequência e guardar no _personal_statitics.job_estimated[q]
         }
     }
     else if ((periodic() && ((event & JOB_RELEASE) || (event & ENTER)))) {

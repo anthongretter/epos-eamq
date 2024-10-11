@@ -296,11 +296,14 @@ class EAMQ: public RT_Common
             Tick accumulated_et;
             
             Tick job_last_et;                // periodic ultimo tempo de exec
-            Tick job_estimated_et[QUEUES];   // media 
+            Tick job_estimated_et[QUEUES];   // tempo de execução relativo a cada frequência
 
-            Tick start_time; // tempo que começa executar tarefa
-            Tick total_execution_time; // tempo de execução da tarefa
-            Tick average_et; // tempo de execução média ponderada 
+            // Ideal é cada fila guardar a porcentagem de frequência para poder usar calculo de eet relativo?
+
+            Tick start_time;                 // tempo que começa executar tarefa
+            Tick total_execution_time;       // tempo de execução da tarefa
+            Tick average_et;                 // tempo de execução média ponderada 
+            Tick prev_execution_time;        // tempo de execução da tarefa anterior
         };
         // global
         struct Global_Statistics {
@@ -311,10 +314,10 @@ class EAMQ: public RT_Common
 
             Criterion last_modification_record[QUEUES]; 
         };
-        struct Optimal_Case {
-            int queue; 
-            int cwt;
-        };
+        // struct Optimal_Case {
+        //     int queue; 
+        //     int cwt;
+        // };
 
         void handle(Event event);       // AQUI QUE VAI SER REAVALIADO, OLHEM O dispatch da Thread, linha 408
                                         // ent devemos filtrar pra cada evento oq fazer: a que executou ficar no mesmo lugar
