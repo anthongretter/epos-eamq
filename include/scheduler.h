@@ -300,11 +300,11 @@ class EAMQ: public RT_Common
             Tick job_enter_time;                // tempo que começa executar tarefa
             Tick job_execution_time;            // tempo de execução real da tarefa
             Tick average_et;                    // tempo de execução média ponderada 
-            Tick prev_execution_time;           // tempo de execução da tarefa anterior
         };
         // global
         struct Global_Statistics {
-            Criterion last_modification_record[QUEUES]; 
+            Priority last_modification_record[QUEUES];
+            bool occ_queues[QUEUES];
         };
         // struct Optimal_Case {
         //     int queue; 
@@ -327,7 +327,7 @@ class EAMQ: public RT_Common
         int rank_eamq(Microsecond p, Microsecond d, Microsecond c);
 
         static void next_queue() { ++_current_queue %= QUEUES; CPU::clock(frequency_within(_current_queue)); };                   // points to next global queue
-        static Hertz frequency_within(unsigned int queue) { CPU::max_clock() - (((CPU::max_clock() * 125) / 1000) * (queue % QUEUES)); };
+        static Hertz frequency_within(unsigned int queue) { return CPU::max_clock() - (((CPU::max_clock() * 125) / 1000) * (queue % QUEUES)); };
 
     protected:
         volatile unsigned int _queue;
@@ -358,7 +358,7 @@ int EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int lookin
     int oc = 0;
     for (unsigned int i = 0; i < QUEUES; i++)
     {
-        if (i == looking_queue && !Thread::scheduler()->empty(looking_queue)) {
+        if (i == looking_queue && !_global_statistics.occ_queues[i]) {
             continue;
         }
         // oc += int(_global_statistics.occ_queue[i]);

@@ -126,12 +126,18 @@ protected:
     // Tiramos o event da lista de argumentos pois ele pode receber o trigger no CREATE também
     // não faz sentido passarmos CREATE para as outras threads, o EVENT é sempre um UPDATE
 
-    // Usado para atualizar os elementos partir de current para tras, da atual fila 
-    static void for_all_behind(Queue::Iterator current) {
-        int queue = current->object()->criterion().queue();
-        for (; current != _scheduler.end(queue); current++)
+    // Mas para deixar extensivel acho melhor deixar como parametro,
+    // pq ai podemos passar evento personalizado, como, no nosso caso, o ASSURE_BEHIND
+
+    // fiz esta logica para que ele percorra todos os anteriores a sua subfila, revisem:
+    
+    void for_all_behind(Criterion::Event event) {
+        for (Queue::Iterator behind = _link.prev();; behind--)
         {
-            current->object()->criterion().handle(Criterion::UPDATE);
+            behind->object()->criterion().handle(event);
+            if (behind->prev() == nullptr || behind->rank() > behind->prev()->rank()) {
+                break;
+            }
         }
     }
 

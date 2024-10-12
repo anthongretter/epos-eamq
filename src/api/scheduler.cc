@@ -99,9 +99,6 @@ LLF::LLF(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(elapsed() +
 void LLF::handle(Event event) {
     if(periodic() && ((event & UPDATE) | (event & JOB_RELEASE) | (event & JOB_FINISH))) {
         _priority = elapsed() + _deadline - _capacity + _statistics.job_utilization;
-        // tempo atual + deadline = ponto real de deadline
-        // capacidade (restante do job executar) + o que ja foi executado = total a executar
-        // ponto real de deadline - total a executar = slack
     }
     RT_Common::handle(event);
 
@@ -138,11 +135,15 @@ void EAMQ::handle(Event event) {
     //     }
     // }
     if (periodic() && (event & LEAVE)) {
-        Tick this_quantum = elapsed() - _personal_statistics.job_enter_time
+        Tick this_quantum = elapsed() - _personal_statistics.job_enter_time;
         _personal_statistics.job_execution_time += this_quantum;
-        for (unsigned int q = 0; i < QUEUES; q++)
+        for (unsigned int q = 0; q < QUEUES; q++)
         {
-            _personal_statistics.remaining_et[q] -= Timer_Common::time(this_quantum, frequency_within(q))
+            // nojo
+            // TODO: fazer operator -= em Microsecond
+            _personal_statistics.remaining_et[q] =
+                Time_Base(_personal_statistics.remaining_et[q])
+                - Time_Base(Timer_Common::time(this_quantum, frequency_within(q)));
         }
     }
     if (periodic() && (event & JOB_FINISH)) {
@@ -156,9 +157,9 @@ void EAMQ::handle(Event event) {
         _personal_statistics.average_et = (_personal_statistics.average_et + _personal_statistics.job_execution_time) / 2;
         _personal_statistics.job_execution_time = 0;
 
-        for (unsigned int q = 0; i < QUEUES; q++)
+        for (unsigned int q = 0; q < QUEUES; q++)
         {
-            _personal_statistics.job_estimated_et[q] = Timer_Common::time(_personal_statistics.average_et, frequency_within(q))
+            _personal_statistics.job_estimated_et[q] = Timer_Common::time(_personal_statistics.average_et, frequency_within(q));
         }
     }
     // if ((periodic() && ((event & JOB_RELEASE) || (event & ENTER)))) {
@@ -169,7 +170,10 @@ void EAMQ::handle(Event event) {
         _personal_statistics.job_enter_time = elapsed();
     }
     if (periodic() && (event & JOB_RELEASE)) {
-        _personal_statistics.remaining_et = _personal_statistics.job_estimated_et;
+        for (unsigned int q = 0; q < QUEUES; q++)
+        {
+            _personal_statistics.remaining_et[q] = _personal_statistics.job_estimated_et[q];
+        }
     }
 
     /* a = new Job()        -> JOB_RELEASE, CREATE
@@ -207,7 +211,7 @@ int EAMQ::rank_eamq(Microsecond p, Microsecond d, Microsecond c) {
             Thread * thread_in_queue = it->object();
             // Thread da frente -> Tf
             // Thread que será inserido -> Ti
-            int thread_capacity_remaining = thread_in_queue->criterion()->personal_statistics().remaining_et[i];
+            int thread_capacity_remaining = thread_in_queue->criterion().personal_statistics().remaining_et[i];
             int total_time_execution = thread_in_queue->priority()      //tempo de espera da (Tf)
                     + static_cast<int>(thread_capacity_remaining*1.15)  //tempo de execução da (Tf)
                     + eet_remaining                                     //tempo de execução (Ti)
