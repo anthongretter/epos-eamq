@@ -117,46 +117,59 @@ EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(rank_eamq(p, 
 
 void EAMQ::handle(Event event) {
     if (event & CREATE) {
-        //Thread::for_all_behind();
-        // for (int i = 0; i < QUEUES; i++)
-        // {
-        //     // Thread::for_all_behind()
-        //     // calcular _personal_statistics.remaining_capacities[i] com base na porcentagem da freq
-        //     // _personal_statistics.remaining_capacities[i] = ((100.0 - (f * SimVars::FREQ_STEP)) / (100.0 - (i * SimVars::FREQ_STEP)))
-        // }
+        // NAO checar os anteriores, pois nao foi rankeado direito ainda (thread.cc, linha 45)
     }
-    // }
-    // troca contexto
     if (event & UPDATE) {
-        // alguem foi inserido a sua frente, logo precisa recalcular
-        // if (_global_statistics.last_modification_record[_queue] <= _priority) {
-            
-        //     int prev_queue = _queue;
-        //     _priority = rank_eamq(_period, _deadline, _capacity);
-        //     // sera q o nosso algoritmo ja garante que uma thread em 
-        //     if (prev_queue != _queue) {
-        //         // atualizar last_modificatiopn_record
-        //         _global_statistics.last_modification_record[_queue];
-        //     }
-        // }
+        // roda TODA vez que uma prempcao ocorre
+        // TODO: fazer evento proprio de insercao entre threads
     }
-    else if (periodic() && ((event & LEAVE) || (event & JOB_FINISH))) {
-        // Se terminou tarefa guarda diferença de tempo atual - tempo iniciado 
-        // Se tarefa foi preemptado, guarda o pedaço do tempo no tempo de execução
-        _personal_statistics.total_execution_time += elapsed() - _personal_statistics.start_time;
-        if (event & JOB_FINISH) {
-            // ATENCAO!! Não sei se esse if funciona, se esse valor é 0 mesmo no inicio 
-            if (_personal_statistics.prev_execution_time == 0) {_personal_statistics.prev_execution_time = _personal_statistics.total_execution_time;}
-            // (tempo de execução anterior + tempo de execução atual) / 2
-            _personal_statistics.average_et = (_personal_statistics.prev_execution_time + _personal_statistics.total_execution_time) / 2;
-            _personal_statistics.prev_execution_time = _personal_statistics.total_execution_time;
-            _personal_statistics.total_execution_time = 0;
-            // Fazer calculo relativo para cada frequência e guardar no _personal_statitics.job_estimated[q]
+    // if (periodic() && ((event & LEAVE) || (event & JOB_FINISH))) {
+    //     // Se terminou tarefa guarda diferença de tempo atual - tempo iniciado 
+    //     // Se tarefa foi preemptado, guarda o pedaço do tempo no tempo de execução
+    //     _personal_statistics.job_execution_time += elapsed() - _personal_statistics.job_enter_time;
+    //     if (event & JOB_FINISH) {
+    //         // ATENCAO!! Não sei se esse if funciona, se esse valor é 0 mesmo no inicio 
+    //         if (_personal_statistics.prev_execution_time == 0) {_personal_statistics.prev_execution_time = _personal_statistics.job_execution_time;}
+    //         // (tempo de execução anterior + tempo de execução atual) / 2
+    //         _personal_statistics.average_et = (_personal_statistics.prev_execution_time + _personal_statistics.job_execution_time) / 2;
+    //         _personal_statistics.prev_execution_time = _personal_statistics.job_execution_time;
+    //         _personal_statistics.job_execution_time = 0;
+    //         // Fazer calculo relativo para cada frequência e guardar no _personal_statitics.job_estimated[q]
+    //     }
+    // }
+    if (periodic() && (event & LEAVE)) {
+        Tick this_quantum = elapsed() - _personal_statistics.job_enter_time
+        _personal_statistics.job_execution_time += this_quantum;
+        for (unsigned int q = 0; i < QUEUES; q++)
+        {
+            _personal_statistics.remaining_et[q] -= Timer_Common::time(this_quantum, frequency_within(q))
         }
     }
-    else if ((periodic() && ((event & JOB_RELEASE) || (event & ENTER)))) {
-        // Guarda tempo que inicia tarefa (no inicio da execução e depois da preempção)
-        _personal_statistics.start_time = elapsed();
+    if (periodic() && (event & JOB_FINISH)) {
+        // ATENCAO!! Não sei se esse if funciona, se esse valor é 0 mesmo no inicio 
+        // non, pois vai ser lixo
+        // if (_personal_statistics.prev_execution_time == 0) {
+        //     _personal_statistics.prev_execution_time = _personal_statistics.job_execution_time;
+        // }
+
+        // (tempo de execução anterior + tempo de execução atual) / 2
+        _personal_statistics.average_et = (_personal_statistics.average_et + _personal_statistics.job_execution_time) / 2;
+        _personal_statistics.job_execution_time = 0;
+
+        for (unsigned int q = 0; i < QUEUES; q++)
+        {
+            _personal_statistics.job_estimated_et[q] = Timer_Common::time(_personal_statistics.average_et, frequency_within(q))
+        }
+    }
+    // if ((periodic() && ((event & JOB_RELEASE) || (event & ENTER)))) {
+    //     // Guarda tempo que inicia tarefa (no inicio da execução e depois da preempção)
+    //     _personal_statistics.job_enter_time = elapsed();
+    // }
+    if (periodic() && (event & ENTER)) {
+        _personal_statistics.job_enter_time = elapsed();
+    }
+    if (periodic() && (event & JOB_RELEASE)) {
+        _personal_statistics.remaining_et = _personal_statistics.job_estimated_et;
     }
 
     /* a = new Job()        -> JOB_RELEASE, CREATE
@@ -164,8 +177,6 @@ void EAMQ::handle(Event event) {
     * a acabou tarefa :(    -> JOB_FINISH
     * a tem nova tarefa >:) -> JOB_RELEASE 
     */
-
-    // ver oq fazer nos outros eventos (entrada e saida de thread)
 }
 
 int EAMQ::rank_eamq(Microsecond p, Microsecond d, Microsecond c) {
@@ -184,7 +195,7 @@ int EAMQ::rank_eamq(Microsecond p, Microsecond d, Microsecond c) {
 
 
         // tempo de execução restante estimado
-        int eet_remaining = _personal_statistics.remaining_capacities[i];
+        int eet_remaining = _personal_statistics.remaining_et[i];
 
         // tempo de execução relativo a frequência 
         // int eet_profile = calculate_profile_eet(i);
@@ -196,7 +207,7 @@ int EAMQ::rank_eamq(Microsecond p, Microsecond d, Microsecond c) {
             Thread * thread_in_queue = it->object();
             // Thread da frente -> Tf
             // Thread que será inserido -> Ti
-            int thread_capacity_remaining = thread_in_queue->criterion()->get_personal_statistics().remaining_capacities[i];
+            int thread_capacity_remaining = thread_in_queue->criterion()->personal_statistics().remaining_et[i];
             int total_time_execution = thread_in_queue->priority()      //tempo de espera da (Tf)
                     + static_cast<int>(thread_capacity_remaining*1.15)  //tempo de execução da (Tf)
                     + eet_remaining                                     //tempo de execução (Ti)
@@ -218,7 +229,7 @@ int EAMQ::rank_eamq(Microsecond p, Microsecond d, Microsecond c) {
 
         // Se a fila não estiver vazia precisamos levar em consideração o tempo que a thread da frente esperará
         if (!Thread::scheduler()->empty(i)) {
-            t_fitted_capacity_remaining = t_fitted->criterion()->get_personal_statistics().remaining_capacities[i];
+            t_fitted_capacity_remaining = t_fitted->criterion()->personal_statistics().remaining_et[i];
         }
 
         int cwt_profile = rp_waiting_time + (t_fitted ? static_cast<int>(t_fitted->priority() + t_fitted_capacity_remaining) : 0);

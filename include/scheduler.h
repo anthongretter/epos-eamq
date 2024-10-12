@@ -283,35 +283,27 @@ class EAMQ: public RT_Common
     public:
         static const unsigned short QUEUES = 4; // or maybe a trait?
         static const unsigned int Q = Traits<Thread>::QUANTUM;
+
         static const bool dynamic = true;
 
     public:
-        // Nao entendi onde eh chamado o construtor dos Criterium??
         EAMQ(int p = APERIODIC): RT_Common(p) {}
         EAMQ(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN);
 
         // Para cada thread
         struct Personal_Statistics {
-            Tick remaining_capacities[QUEUES];
-            Tick accumulated_et;
-            
-            Tick job_last_et;                // periodic ultimo tempo de exec
-            Tick job_estimated_et[QUEUES];   // tempo de execução relativo a cada frequência
+            Microsecond remaining_et[QUEUES];
+            Microsecond job_estimated_et[QUEUES];   // tempo de execução relativo a cada frequência
 
             // Ideal é cada fila guardar a porcentagem de frequência para poder usar calculo de eet relativo?
 
-            Tick start_time;                 // tempo que começa executar tarefa
-            Tick total_execution_time;       // tempo de execução da tarefa
-            Tick average_et;                 // tempo de execução média ponderada 
-            Tick prev_execution_time;        // tempo de execução da tarefa anterior
+            Tick job_enter_time;                // tempo que começa executar tarefa
+            Tick job_execution_time;            // tempo de execução real da tarefa
+            Tick average_et;                    // tempo de execução média ponderada 
+            Tick prev_execution_time;           // tempo de execução da tarefa anterior
         };
         // global
         struct Global_Statistics {
-            bool occ_queue[QUEUES];     // rever se precisa, se sim, atualizar toda insercaos
-            // int last_thread_et;
-            Tick estipulated_capacity;
-            Tick last_job_dispatch;
-
             Criterion last_modification_record[QUEUES]; 
         };
         // struct Optimal_Case {
@@ -319,12 +311,9 @@ class EAMQ: public RT_Common
         //     int cwt;
         // };
 
-        void handle(Event event);       // AQUI QUE VAI SER REAVALIADO, OLHEM O dispatch da Thread, linha 408
-                                        // ent devemos filtrar pra cada evento oq fazer: a que executou ficar no mesmo lugar
-                                        // e outras atualizar statistics dinamicos, como deadline e capacity relativo a frequencia,
-                                        // a thread de maior tempo de espera, etc.
+        void handle(Event event);
 
-        Personal_Statistics get_personal_statistics() { return _personal_statistics; }
+        Personal_Statistics personal_statistics() { return _personal_statistics; }
 
         const bool is_recent_insertion() {return _is_recent_insertion; }
         void is_recent_insertion(bool b) { _is_recent_insertion = b; }
@@ -335,17 +324,17 @@ class EAMQ: public RT_Common
     protected:
 
         void set_queue(unsigned int q) { _queue = q; };
+        int rank_eamq(Microsecond p, Microsecond d, Microsecond c);
 
-        int rank_eamq(Microsecond p, Microsecond d, Microsecond c); // creio q possa ser o construtor    
-
-        static void next_queue() { ++_current_queue %= QUEUES; };                   // points to next global queue
+        static void next_queue() { ++_current_queue %= QUEUES; CPU::clock(frequency_within(_current_queue)); };                   // points to next global queue
+        static Hertz frequency_within(unsigned int queue) { CPU::max_clock() - (((CPU::max_clock() * 125) / 1000) * (queue % QUEUES)); };
 
     protected:
-        volatile unsigned int _queue;                       // Thread's current queue (usado pra inserir em fila tal)
+        volatile unsigned int _queue;
         volatile bool _is_recent_insertion;
         Personal_Statistics _personal_statistics;
 
-        static volatile unsigned _current_queue;            // Current global queue (usado pra retirar o proximo a executar)
+        static volatile unsigned _current_queue;
         static Global_Statistics _global_statistics;
 
     private:
@@ -369,10 +358,11 @@ int EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int lookin
     int oc = 0;
     for (unsigned int i = 0; i < QUEUES; i++)
     {
-        if (i == looking_queue && !_global_statistics.occ_queue[looking_queue]) {
+        if (i == looking_queue && !Thread::scheduler()->empty(looking_queue)) {
             continue;
         }
-        oc += int(_global_statistics.occ_queue[i]);
+        // oc += int(_global_statistics.occ_queue[i]);
+        oc++;
     }
         
     int rp_waiting_time = Q * (oc) * (rp_rounds);
