@@ -246,7 +246,8 @@ public:
 public:
     LM(int p = APERIODIC): RT_Common(p) {}
     LM(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(ticks((d ? d : p) - c)), p, d, c) {}
-};
+};    // Mas para deixar extensivel acho melhor deixar como parametro,
+        // pq ai podemos passar evento personalizado, como, no nosso caso, o ASSURE_BEHIND
 
 // Earliest Deadline First
 class EDF: public RT_Common
@@ -290,26 +291,28 @@ class EAMQ: public RT_Common
         EAMQ(int p = APERIODIC): RT_Common(p) {}
         EAMQ(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN);
 
-        // Para cada thread
+        enum {
+            ASSURE_BEHIND      = 1 << 6
+        };
+
         struct Personal_Statistics {
-            Microsecond remaining_et[QUEUES];
-            Microsecond job_estimated_et[QUEUES];   // tempo de execução relativo a cada frequência
+            Microsecond remaining_deadline;
+            Microsecond remaining_et[QUEUES];       // tempo de execucao restante em cada frequencia (inicia como job_estimated_et)
+            Microsecond job_estimated_et[QUEUES];   // tempo de execução estimado em cada frequencia dada media 
 
-            // Ideal é cada fila guardar a porcentagem de frequência para poder usar calculo de eet relativo?
-
-            Tick job_enter_time;                // tempo que começa executar tarefa
-            Tick job_execution_time;            // tempo de execução real da tarefa
+            Tick job_enter_time;                // tempo de entrada do ultimo job
+            Tick job_execution_time;            // tempo de execução real acumulada da tarefa
             Tick average_et;                    // tempo de execução média ponderada 
         };
-        // global
-        struct Global_Statistics {
-            Priority last_modification_record[QUEUES];
-            bool occ_queues[QUEUES];
+
+        struct Optimal_Case {
+            int queue = -1; 
+            int priority = -1;
+
+            // when threads put themselves in front of others, we need to know where,
+            // so that others the behind it can defend themselves
+            Thread* jumped = nullptr;
         };
-        // struct Optimal_Case {
-        //     int queue; 
-        //     int cwt;
-        // };
 
         void handle(Event event);
 
@@ -322,53 +325,35 @@ class EAMQ: public RT_Common
         const volatile unsigned int & queue() const volatile { return _queue; };    // returns the Thread's queue
 
     protected:
-
         void set_queue(unsigned int q) { _queue = q; };
-        int rank_eamq(Microsecond p, Microsecond d, Microsecond c);
 
-        static void next_queue() { ++_current_queue %= QUEUES; CPU::clock(frequency_within(_current_queue)); };                   // points to next global queue
-        static Hertz frequency_within(unsigned int queue) { return CPU::max_clock() - (((CPU::max_clock() * 125) / 1000) * (queue % QUEUES)); };
+        // TODO trocar nome (evaluate maybe?)
+        Optimal_Case rank_eamq();
+
+        static void next_queue() { ++_current_queue %= QUEUES; };                   // points to next global queue
+
+        /* Em caso de 4 filas:
+        *   0 -> 100%
+        *   1 -> 87%
+        *   2 -> 75%
+        *   3 -> 
+        */
+        static Hertz frequency_within(unsigned int queue) { 
+            return CPU::max_clock() - (((CPU::max_clock() * 125) / 1000) * (queue % QUEUES)); 
+        };
 
     protected:
         volatile unsigned int _queue;
         volatile bool _is_recent_insertion;
         Personal_Statistics _personal_statistics;
+        Optimal_Case _last_insert;
 
         static volatile unsigned _current_queue;
-        static Global_Statistics _global_statistics;
 
     private:
-        int estimate_rp_waiting_time(unsigned int eet_profile, unsigned int i);
-        // int search_fittest_place(int rp_waiting_time)
+        int estimate_rp_waiting_time(unsigned int eet_profile, unsigned int looking_queue);
 };
 
-int EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int looking_queue) {
-    // const int rp_rounds = static_cast<int>((eet_profile / Q));
-    // if ((static_cast<float>(eet_profile) / Q) == rp_rounds) {
-    //     rp_rounds--;
-    // }
-
-    int rp_rounds = eet_profile/Q;
-
-    // Se precisar de uma rodada extra com um tamanho menor que o Quantum
-    if (eet_profile % Q) {
-        rp_rounds++;
-    }
-
-    int oc = 0;
-    for (unsigned int i = 0; i < QUEUES; i++)
-    {
-        if (i == looking_queue && !_global_statistics.occ_queues[i]) {
-            continue;
-        }
-        // oc += int(_global_statistics.occ_queue[i]);
-        oc++;
-    }
-        
-    int rp_waiting_time = Q * (oc) * (rp_rounds);
-
-    return rp_waiting_time;
-}
 
 __END_SYS
 

@@ -110,62 +110,54 @@ void LLF::handle(Event event) {
 template FCFS::FCFS<>(int p);
 
 
-EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(rank_eamq(p, (d ? d : p), c), p, d, c) {}
+volatile unsigned EAMQ::_current_queue = 0;
+
+EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(-1, p, d, c) {
+    d = (d ? d : p);
+    
+    if (c != UNKNOWN) {
+        _personal_statistics.average_et = c;
+    } else {
+        _personal_statistics.average_et = time(d) / 3;   // initial ET estimation (1/3 of deadline)
+    }
+
+    _personal_statistics.remaining_deadline = d;
+
+    Optimal_Case op = rank_eamq();
+    _last_insert = op;
+    _queue = op.queue;
+    _priority = op.priority;
+}
 
 void EAMQ::handle(Event event) {
-    if (event & CREATE) {
-        // NAO checar os anteriores, pois nao foi rankeado direito ainda (thread.cc, linha 45)
+    if (event & LEAVE) {
+        EAMQ::next_queue();
+        CPU::clock(frequency_within(_current_queue));
+    }
+    if (event & CREATE) {  // after insert(Thread)
+
     }
     if (event & UPDATE) {
         // roda TODA vez que uma prempcao ocorre
         // TODO: fazer evento proprio de insercao entre threads
     }
-    // if (periodic() && ((event & LEAVE) || (event & JOB_FINISH))) {
-    //     // Se terminou tarefa guarda diferença de tempo atual - tempo iniciado 
-    //     // Se tarefa foi preemptado, guarda o pedaço do tempo no tempo de execução
-    //     _personal_statistics.job_execution_time += elapsed() - _personal_statistics.job_enter_time;
-    //     if (event & JOB_FINISH) {
-    //         // ATENCAO!! Não sei se esse if funciona, se esse valor é 0 mesmo no inicio 
-    //         if (_personal_statistics.prev_execution_time == 0) {_personal_statistics.prev_execution_time = _personal_statistics.job_execution_time;}
-    //         // (tempo de execução anterior + tempo de execução atual) / 2
-    //         _personal_statistics.average_et = (_personal_statistics.prev_execution_time + _personal_statistics.job_execution_time) / 2;
-    //         _personal_statistics.prev_execution_time = _personal_statistics.job_execution_time;
-    //         _personal_statistics.job_execution_time = 0;
-    //         // Fazer calculo relativo para cada frequência e guardar no _personal_statitics.job_estimated[q]
-    //     }
-    // }
+    if (periodic() && (event & UPDATE)) {
+        _personal_statistics.remaining_deadline -= Microsecond(Q);
+    }
+    if (periodic() && (event & CREATE)) {
+        if (_last_insert.jumped) {
+            _last_insert.jumped->link()->prev()->object()->for_all_behind(ASSURE_BEHIND);
+        }
+    }
     if (periodic() && (event & LEAVE)) {
-        Tick this_quantum = elapsed() - _personal_statistics.job_enter_time;
-        _personal_statistics.job_execution_time += this_quantum;
+        Tick in_cpu = elapsed() - _personal_statistics.job_enter_time;
+        _personal_statistics.job_execution_time += in_cpu;
         for (unsigned int q = 0; q < QUEUES; q++)
         {
-            // nojo
-            // TODO: fazer operator -= em Microsecond
-            _personal_statistics.remaining_et[q] =
-                Time_Base(_personal_statistics.remaining_et[q])
-                - Time_Base(Timer_Common::time(this_quantum, frequency_within(q)));
+            // Reduz tempo executado deste quantum
+            _personal_statistics.remaining_et[q] -= Timer_Common::time(in_cpu, frequency_within(q));
         }
     }
-    if (periodic() && (event & JOB_FINISH)) {
-        // ATENCAO!! Não sei se esse if funciona, se esse valor é 0 mesmo no inicio 
-        // non, pois vai ser lixo
-        // if (_personal_statistics.prev_execution_time == 0) {
-        //     _personal_statistics.prev_execution_time = _personal_statistics.job_execution_time;
-        // }
-
-        // (tempo de execução anterior + tempo de execução atual) / 2
-        _personal_statistics.average_et = (_personal_statistics.average_et + _personal_statistics.job_execution_time) / 2;
-        _personal_statistics.job_execution_time = 0;
-
-        for (unsigned int q = 0; q < QUEUES; q++)
-        {
-            _personal_statistics.job_estimated_et[q] = Timer_Common::time(_personal_statistics.average_et, frequency_within(q));
-        }
-    }
-    // if ((periodic() && ((event & JOB_RELEASE) || (event & ENTER)))) {
-    //     // Guarda tempo que inicia tarefa (no inicio da execução e depois da preempção)
-    //     _personal_statistics.job_enter_time = elapsed();
-    // }
     if (periodic() && (event & ENTER)) {
         _personal_statistics.job_enter_time = elapsed();
     }
@@ -175,6 +167,19 @@ void EAMQ::handle(Event event) {
             _personal_statistics.remaining_et[q] = _personal_statistics.job_estimated_et[q];
         }
     }
+    if (periodic() && (event & JOB_FINISH)) {
+        // (tempo de execução anterior + tempo de execução atual) / 2
+        _personal_statistics.average_et = (_personal_statistics.average_et + _personal_statistics.job_execution_time) / 2;
+        _personal_statistics.job_execution_time = 0;
+
+        for (unsigned int q = 0; q < QUEUES; q++)
+        {
+            _personal_statistics.job_estimated_et[q] = Timer_Common::time(_personal_statistics.average_et, frequency_within(q));
+        }
+    }
+    if (periodic() && (event & ASSURE_BEHIND)) {
+
+    }
 
     /* a = new Job()        -> JOB_RELEASE, CREATE
     * [b] premptado por [a] -> ENTER (a), LEAVE (b)
@@ -183,7 +188,7 @@ void EAMQ::handle(Event event) {
     */
 }
 
-int EAMQ::rank_eamq(Microsecond p, Microsecond d, Microsecond c) {
+EAMQ::Optimal_Case EAMQ::rank_eamq() {
 
     // nota: atribuir c ao remaining_capacity se provido, se n usar estipulacao
     // mas n aq
@@ -191,34 +196,33 @@ int EAMQ::rank_eamq(Microsecond p, Microsecond d, Microsecond c) {
     // Caso de deadline = 0 e periodo = 0 -> atribuir rank para deixar no ultimo da fila
     // Se tarefa é periodica com deadline = 0 -> podemos usar periodo como deadline (?)
 
-    //Optimal_Case optimal_case = {-1, -1};
+    Optimal_Case optimal_case;
 
     //for(unsigned int i = 0; i < QUEUES; i++) {
-    for(unsigned int i = QUEUES - 1; i >= 0; i--) {
+    for (unsigned int i = QUEUES - 1; i >= 0; i--) {
         Thread * t_fitted = nullptr;
-
 
         // tempo de execução restante estimado
         int eet_remaining = _personal_statistics.remaining_et[i];
 
-        // tempo de execução relativo a frequência 
-        // int eet_profile = calculate_profile_eet(i);
         // calcula round profile waiting time 
         int rp_waiting_time = estimate_rp_waiting_time(eet_remaining, i);
 
         // Não avaliamos a possibilidade de inserir threads na frente de outras recém inseridas para evitarmos um possível loop infinito
-        for(auto it = Thread::scheduler()->end(i); it != Thread::scheduler()->begin(i) && !it->object()->criterion().is_recent_insertion() ; it = it->prev()) {
+        for (auto it = Thread::scheduler()->end(i); it != Thread::scheduler()->begin(i) && !it->object()->criterion().is_recent_insertion() ; it = it->prev()) {
             Thread * thread_in_queue = it->object();
             // Thread da frente -> Tf
             // Thread que será inserido -> Ti
             int thread_capacity_remaining = thread_in_queue->criterion().personal_statistics().remaining_et[i];
-            int total_time_execution = thread_in_queue->priority()      //tempo de espera da (Tf)
-                    + static_cast<int>(thread_capacity_remaining*1.15)  //tempo de execução da (Tf)
-                    + eet_remaining                                     //tempo de execução (Ti)
-                    + rp_waiting_time;                                  //tempo de espera por RP (Ti)
+            int total_time_execution = thread_in_queue->priority()          //tempo de espera da (Tf)
+                    + (thread_capacity_remaining * 115 / 100)               //tempo de execução da (Tf)
+                    + eet_remaining                                         //tempo de execução (Ti)
+                    + rp_waiting_time;                                      //tempo de espera por RP (Ti)
 
-            if (total_time_execution < d) {
+            if (total_time_execution < int(Time_Base(_personal_statistics.remaining_deadline))) {
                 t_fitted = thread_in_queue;
+                // vai inserir na frente de alguem, entao salvar onde
+                optimal_case.jumped = t_fitted;
                 break;
             }
         }
@@ -233,23 +237,52 @@ int EAMQ::rank_eamq(Microsecond p, Microsecond d, Microsecond c) {
 
         // Se a fila não estiver vazia precisamos levar em consideração o tempo que a thread da frente esperará
         if (!Thread::scheduler()->empty(i)) {
-            t_fitted_capacity_remaining = t_fitted->criterion()->personal_statistics().remaining_et[i];
+            t_fitted_capacity_remaining = t_fitted->criterion().personal_statistics().remaining_et[i];
         }
 
-        int cwt_profile = rp_waiting_time + (t_fitted ? static_cast<int>(t_fitted->priority() + t_fitted_capacity_remaining) : 0);
-        int available_time_to_run = d - cwt_profile;
+        int cwt_profile = rp_waiting_time + (t_fitted ? t_fitted->priority() + t_fitted_capacity_remaining : 0);
+        int available_time_to_run = _personal_statistics.remaining_deadline - cwt_profile;
         int idle_time = available_time_to_run - eet_remaining;
 
         if (idle_time >= 0) {
-            set_queue(i);
-            return cwt_profile;
+            optimal_case.queue = i;
+            optimal_case.priority = cwt_profile;
+            // set_queue(i);
+            // return cwt_profile;
             // optimal_case = {i, cwt_profile};
-            // return optimal_case;
+            return optimal_case;
         }
     }
     // Não encontrou lugar na fila
     // return optimal_case;
-    return -1;
+    return optimal_case;    // TRATAR
+}
+
+int EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int looking_queue) {
+    // const int rp_rounds = static_cast<int>((eet_profile / Q));
+    // if ((static_cast<float>(eet_profile) / Q) == rp_rounds) {
+    //     rp_rounds--;
+    // }
+
+    int rp_rounds = eet_profile/Q;
+
+    // Se precisar de uma rodada extra com um tamanho menor que o Quantum
+    if (eet_profile % Q) {
+        rp_rounds++;
+    }
+
+    int oc = 0;
+    for (unsigned int i = 0; i < QUEUES; i++)
+    {
+        if (i == looking_queue && !Thread::scheduler()->empty(i)) {
+            continue;
+        }
+        oc++;
+    }
+        
+    int rp_waiting_time = Q * (oc) * (rp_rounds);
+
+    return rp_waiting_time;
 }
 
 __END_SYS

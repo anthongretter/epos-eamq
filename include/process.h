@@ -21,6 +21,7 @@ class Thread
     friend class Synchronizer_Common;   // for lock() and sleep()
     friend class Alarm;                 // for lock()
     friend class System;                // for init()
+    friend class EAMQ;                  // for handle()
 
 protected:
     static const bool preemptive = Traits<Thread>::Criterion::preemptive;
@@ -92,6 +93,64 @@ public:
     static void yield();
     static void exit(int status = 0);
 
+    // Tiramos o event da lista de argumentos pois ele pode receber o trigger no CREATE também
+    // não faz sentido passarmos CREATE para as outras threads, o EVENT é sempre um UPDATE
+
+        // Mas para deixar extensivel acho melhor deixar como parametro,
+        // pq ai podemos passar evento personalizado, como, no nosso caso, o ASSURE_BEHIND
+
+        // fiz esta logica para que ele percorra todos os anteriores a sua subfila, revisem:
+
+
+// /* Garante que, se uma thread for inserida a frente de outra(s) em uma fila,
+// * verifica se esta(s) thread(s) ainda consegue(m) esperar, dado o novo atraso
+// * da thread inserida, recalculando o rank.
+// * */
+// // Leva ponteiro para tras e recalcula rank e reposiona talvez
+// void assure_behind(ProfileElement * inserted)
+// {
+//     // t1 t2 t3 INSERTED ...
+//     for (ProfileElement * p = inserted->next(); p != nullptr;)
+//     {
+//         //salva p->next() no next
+//         ProfileElement * next = p->next();
+//         // remover thread p
+//         qs[inserted->object()->current_queue]->remove(p);
+//         // recalcula 
+//         p->object()->rank(qs);
+//         // reinsere na posicao certa
+//         qs[p->object()->current_queue]->insert(p);
+
+//         // se migra para outra fila -> verifica seus anteriores
+//         if (inserted->object()->current_queue != p->object()->current_queue) {assure_behind(p);}
+//         // atualiza p para proximo next
+//         p = next;
+//     }
+// }
+
+    void for_all_behind(Criterion::Event event) {
+        this->criterion().is_recent_insertion(true);
+   
+        for (Queue::Element * behind = _link.next(); behind != nullptr;)
+        {
+            Queue::Element * next = behind->next();
+
+            behind->object()->criterion().handle(Criterion::ASSURE_BEHIND);
+
+            // _scheduler.remove(behind->object());
+
+            // behind->object()->criterion().rank_eamq()
+
+            // _scheduler.insert(behind->object());
+
+            if (this->criterion().queue() != behind->object()->criterion().queue()) {
+                behind->object()->for_all_behind(event);
+            }
+
+            behind = next;
+        }
+    }
+
 protected:
     void constructor_prologue(unsigned int stack_size);
     void constructor_epilogue(Log_Addr entry, unsigned int stack_size);
@@ -120,25 +179,6 @@ protected:
         for(Queue::Iterator i = _scheduler.begin(); i != _scheduler.end(); ++i)
             if(i->object()->criterion() != IDLE)
                 i->object()->criterion().handle(event);
-    }
-
-
-    // Tiramos o event da lista de argumentos pois ele pode receber o trigger no CREATE também
-    // não faz sentido passarmos CREATE para as outras threads, o EVENT é sempre um UPDATE
-
-    // Mas para deixar extensivel acho melhor deixar como parametro,
-    // pq ai podemos passar evento personalizado, como, no nosso caso, o ASSURE_BEHIND
-
-    // fiz esta logica para que ele percorra todos os anteriores a sua subfila, revisem:
-    
-    void for_all_behind(Criterion::Event event) {
-        for (Queue::Iterator behind = _link.prev();; behind--)
-        {
-            behind->object()->criterion().handle(event);
-            if (behind->prev() == nullptr || behind->rank() > behind->prev()->rank()) {
-                break;
-            }
-        }
     }
 
     static int idle();

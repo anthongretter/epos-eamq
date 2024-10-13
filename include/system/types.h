@@ -155,6 +155,7 @@ public:
     operator Time_Base() { return _time; }
     operator Time_Base() const { return _time; }
     operator Time_Base() volatile { return _time; }
+    Microsecond operator -=(const Microsecond& b) { return Microsecond(_time - Time_Base(b)); }
 
 private:
     Time_Base _time;
