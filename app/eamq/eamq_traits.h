@@ -30,8 +30,13 @@ template<> struct Traits<Debug>: public Traits<Build>
 {
     static const bool error   = true;
     static const bool warning = true;
-    static const bool info    = false;
-    static const bool trace   = false;
+    static const bool info    = true;
+    static const bool trace   = true;
+};
+
+template<> struct Traits<EAMQ>: public Traits<Build>
+{
+    static const bool debugged = true;
 };
 
 template<> struct Traits<Lists>: public Traits<Build>
@@ -53,7 +58,7 @@ template<> struct Traits<Observers>: public Traits<Build>
 {
     // Some observed objects are created before initializing the Display
     // Enabling debug may cause trouble in some Machines
-    static const bool debugged = false;
+    static const bool debugged = true;
 };
 
 

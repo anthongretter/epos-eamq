@@ -29,10 +29,12 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
     db<Thread>(TRC) << "Thread(entry=" << entry
                     << ",state=" << _state
                     << ",priority=" << _link.rank()
+                    << ",queue=" << _link.rank().queue()
                     << ",stack={b=" << reinterpret_cast<void *>(_stack)
                     << ",s=" << stack_size
                     << "},context={b=" << _context
                     << "," << *_context << "}) => " << this << endl;
+    // db<Thread>(TRC) << "current_queue=" << EAMQ::current_queue() << endl;
 
     assert((_state != WAITING) && (_state != FINISHING)); // invalid states
 

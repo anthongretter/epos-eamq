@@ -1,3 +1,4 @@
+
 // EPOS CPU Scheduler Component Implementation
 
 #include <process.h>
@@ -110,12 +111,19 @@ void LLF::handle(Event event) {
 template FCFS::FCFS<>(int p);
 
 
-volatile unsigned EAMQ::_current_queue = 0;
+volatile unsigned EAMQ::_current_queue = QUEUES - 2;
 
 EAMQ::EAMQ(int p) : RT_Common(p) {
     // Aperiodic Threads (LOW priority) are thrown into the lowest frequency
     // and Threads with NORMAL into the penultimate one
-    _queue = QUEUES - (p == APERIODIC) ? 1 : 2;
+    db<EAMQ>(TRC) << "Construindo p:" << p << endl;
+    if (p > LOW) {
+        _queue = QUEUES - 2;
+    } else {
+        _queue = QUEUES - 1;
+    }
+    // _queue = QUEUES - ((p == APERIODIC) ? 1 : 2);
+    db<EAMQ>(TRC) << "to queue:" << _queue << endl;
 }
 
 // -1 passado para RT_Common pois logo em seguida ele é atualizado
@@ -140,9 +148,11 @@ void EAMQ::handle(Event event) {
     // Se thread foi preemptado / terminou
     if (event & LEAVE) {
         // Avança para proxima fila
+        unsigned int last = _current_queue; 
         do {
             EAMQ::next_queue();
-        } while (Thread::scheduler()->empty(_current_queue));
+            db<EAMQ>(TRC) << "current_queue=" << EAMQ::current_queue() << endl;
+        } while (Thread::scheduler()->empty(_current_queue) && _current_queue != last);
 
         // Ajustando a frequência conforme a fila 
         CPU::clock(frequency_within(_current_queue));
@@ -194,7 +204,7 @@ void EAMQ::handle(Event event) {
         for (unsigned int q = 0; q < QUEUES; q++)
         {
             // Atualiza tempo de execução restante para EET
-                        _personal_statistics.remaining_et[q] = _personal_statistics.job_estimated_et[q];
+            _personal_statistics.remaining_et[q] = _personal_statistics.job_estimated_et[q];
         }
     }
     // Quando uma thread periodica termina tarefa

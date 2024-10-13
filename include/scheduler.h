@@ -310,15 +310,6 @@ class EAMQ: public RT_Common
             Tick average_et;                    // tempo de execução média ponderada 
         };
 
-        // struct Optimal_Case {
-        //     int queue = -1; 
-        //     int priority = -1;
-
-        //     // when threads put themselves in front of others, we need to know where,
-        //     // so that others the behind it can defend themselves
-        //     Thread* jumped = nullptr;
-        // };
-
         void handle(Event event);
 
         Personal_Statistics personal_statistics() { return _personal_statistics; }
@@ -326,17 +317,15 @@ class EAMQ: public RT_Common
         const bool is_recent_insertion() {return _is_recent_insertion; }
         void is_recent_insertion(bool b) { _is_recent_insertion = b; }
 
-        static unsigned int current_queue() { return _current_queue; };             // current global queue
-        const volatile unsigned int & queue() const volatile { return _queue; };    // returns the Thread's queue
-
-        // points to next global queue with threads
-        static void next_queue() { ++_current_queue %= QUEUES; }
         // TODO trocar nome (evaluate maybe?)
         int rank_eamq();
+        const volatile unsigned int & queue() const volatile { return _queue; };    // returns the Thread's queue
+
+        static unsigned int current_queue() { return _current_queue; };             // current global queue
+        static void next_queue() { ++_current_queue %= QUEUES; }                    // points to next global queue with threads
 
     protected:
         void set_queue(unsigned int q) { _queue = q; };
-
         
         /* Em caso de 4 filas:
         *   0 -> 100%
