@@ -93,56 +93,33 @@ public:
     static void yield();
     static void exit(int status = 0);
 
-    // Tiramos o event da lista de argumentos pois ele pode receber o trigger no CREATE também
-    // não faz sentido passarmos CREATE para as outras threads, o EVENT é sempre um UPDATE
-
-        // Mas para deixar extensivel acho melhor deixar como parametro,
-        // pq ai podemos passar evento personalizado, como, no nosso caso, o ASSURE_BEHIND
-
-        // fiz esta logica para que ele percorra todos os anteriores a sua subfila, revisem:
-
-
-// /* Garante que, se uma thread for inserida a frente de outra(s) em uma fila,
-// * verifica se esta(s) thread(s) ainda consegue(m) esperar, dado o novo atraso
-// * da thread inserida, recalculando o rank.
-// * */
-// // Leva ponteiro para tras e recalcula rank e reposiona talvez
-// void assure_behind(ProfileElement * inserted)
-// {
-//     // t1 t2 t3 INSERTED ...
-//     for (ProfileElement * p = inserted->next(); p != nullptr;)
-//     {
-//         //salva p->next() no next
-//         ProfileElement * next = p->next();
-//         // remover thread p
-//         qs[inserted->object()->current_queue]->remove(p);
-//         // recalcula 
-//         p->object()->rank(qs);
-//         // reinsere na posicao certa
-//         qs[p->object()->current_queue]->insert(p);
-
-//         // se migra para outra fila -> verifica seus anteriores
-//         if (inserted->object()->current_queue != p->object()->current_queue) {assure_behind(p);}
-//         // atualiza p para proximo next
-//         p = next;
-//     }
-// }
-
+    // for_all_behind() is used to update the rank of all threads behind the current one
+    // the first time it is called is when a thread is inserted in the scheduler
+    // but it can be called again if other threads changes their queue
     void for_all_behind(Criterion::Event event) {
         this->criterion().is_recent_insertion(true);
    
         for (Queue::Element * behind = _link.next(); behind != nullptr;)
         {
+            // if finds a aperiodic thread, stop
+            if (!behind->object()->criterion().periodic()) break;
+
+            // next element to be evaluated
             Queue::Element * next = behind->next();
 
-            behind->object()->criterion().handle(Criterion::ASSURE_BEHIND);
+            // throws event to the thread
+            behind->object()->criterion().handle(event);
 
-            // _scheduler.remove(behind->object());
+            // remove the thread from the scheduler
+            _scheduler.remove(behind->object());
 
-            // behind->object()->criterion().rank_eamq()
+            // recalculates the rank of the thread
+            behind->object()->criterion().rank_eamq();
 
-            // _scheduler.insert(behind->object());
+            // insert thread in new position (or in the old one)
+            _scheduler.insert(behind->object());
 
+            // if the thread has changed its queue, it is necessary to check the new previous ones
             if (this->criterion().queue() != behind->object()->criterion().queue()) {
                 behind->object()->for_all_behind(event);
             }

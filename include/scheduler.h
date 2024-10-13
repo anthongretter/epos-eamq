@@ -122,6 +122,11 @@ public:
     Microsecond deadline() { return 0; }
     Microsecond capacity() { return 0; }
 
+    // bool is_recent_insertion() { return false; }
+    // void is_recent_insertion(bool a) {}
+    // int rank_eamq() { return 0; }
+    // const volatile unsigned int queue() const volatile { return 0; };    // returns the Thread's queue
+
     bool periodic() { return false; }
 
     volatile Statistics & statistics() { return _statistics; }
@@ -288,7 +293,7 @@ class EAMQ: public RT_Common
         static const bool dynamic = true;
 
     public:
-        EAMQ(int p = APERIODIC): RT_Common(p) {}
+        EAMQ(int p = APERIODIC);
         EAMQ(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN);
 
         enum {
@@ -305,14 +310,14 @@ class EAMQ: public RT_Common
             Tick average_et;                    // tempo de execução média ponderada 
         };
 
-        struct Optimal_Case {
-            int queue = -1; 
-            int priority = -1;
+        // struct Optimal_Case {
+        //     int queue = -1; 
+        //     int priority = -1;
 
-            // when threads put themselves in front of others, we need to know where,
-            // so that others the behind it can defend themselves
-            Thread* jumped = nullptr;
-        };
+        //     // when threads put themselves in front of others, we need to know where,
+        //     // so that others the behind it can defend themselves
+        //     Thread* jumped = nullptr;
+        // };
 
         void handle(Event event);
 
@@ -324,19 +329,20 @@ class EAMQ: public RT_Common
         static unsigned int current_queue() { return _current_queue; };             // current global queue
         const volatile unsigned int & queue() const volatile { return _queue; };    // returns the Thread's queue
 
+        // points to next global queue with threads
+        static void next_queue() { ++_current_queue %= QUEUES; }
+        // TODO trocar nome (evaluate maybe?)
+        int rank_eamq();
+
     protected:
         void set_queue(unsigned int q) { _queue = q; };
 
-        // TODO trocar nome (evaluate maybe?)
-        Optimal_Case rank_eamq();
-
-        static void next_queue() { ++_current_queue %= QUEUES; };                   // points to next global queue
-
+        
         /* Em caso de 4 filas:
         *   0 -> 100%
         *   1 -> 87%
         *   2 -> 75%
-        *   3 -> 
+        *   3 -> 62%
         */
         static Hertz frequency_within(unsigned int queue) { 
             return CPU::max_clock() - (((CPU::max_clock() * 125) / 1000) * (queue % QUEUES)); 
@@ -344,9 +350,9 @@ class EAMQ: public RT_Common
 
     protected:
         volatile unsigned int _queue;
-        volatile bool _is_recent_insertion;
+        bool _is_recent_insertion;
         Personal_Statistics _personal_statistics;
-        Optimal_Case _last_insert;
+        Thread * _inserted_in_front_of;
 
         static volatile unsigned _current_queue;
 

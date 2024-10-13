@@ -112,9 +112,16 @@ template FCFS::FCFS<>(int p);
 
 volatile unsigned EAMQ::_current_queue = 0;
 
+EAMQ::EAMQ(int p) : RT_Common(p) {
+    // Aperiodic Threads (LOW priority) are thrown into the lowest frequency
+    // and Threads with NORMAL into the penultimate one
+    _queue = QUEUES - (p == APERIODIC) ? 1 : 2;
+}
+
+// -1 passado para RT_Common pois logo em seguida ele é atualizado
 EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(-1, p, d, c) {
     d = (d ? d : p);
-    
+
     if (c != UNKNOWN) {
         _personal_statistics.average_et = c;
     } else {
@@ -123,50 +130,74 @@ EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(-1, p, d, c) 
 
     _personal_statistics.remaining_deadline = d;
 
-    Optimal_Case op = rank_eamq();
-    _last_insert = op;
-    _queue = op.queue;
-    _priority = op.priority;
+    int success = rank_eamq();
+    if (!success) {
+        // something?
+    }
 }
 
 void EAMQ::handle(Event event) {
+    // Se thread foi preemptado / terminou
     if (event & LEAVE) {
-        EAMQ::next_queue();
+        // Avança para proxima fila
+        do {
+            EAMQ::next_queue();
+        } while (Thread::scheduler()->empty(_current_queue));
+
+        // Ajustando a frequência conforme a fila 
         CPU::clock(frequency_within(_current_queue));
     }
-    if (event & CREATE) {  // after insert(Thread)
-
+    if (event & CREATE) {
     }
     if (event & UPDATE) {
-        // roda TODA vez que uma prempcao ocorre
-        // TODO: fazer evento proprio de insercao entre threads
     }
+    // Quando acontece troca de contexto
     if (periodic() && (event & UPDATE)) {
-        _personal_statistics.remaining_deadline -= Microsecond(Q);
+        if (Q > Time_Base(_personal_statistics.remaining_deadline)) {
+            // underflow
+            _personal_statistics.remaining_deadline = Microsecond(0);
+            // somehow discard this thread
+        } else {
+            // Decrementa do deadline o quantum
+            _personal_statistics.remaining_deadline -= Microsecond(Q);
+        }
     }
     if (periodic() && (event & CREATE)) {
-        if (_last_insert.jumped) {
-            _last_insert.jumped->link()->prev()->object()->for_all_behind(ASSURE_BEHIND);
+        // Se foi inserido no meio da fila (ou seja, se tem t_fitted)
+        if (_inserted_in_front_of) {
+            // Faz atualização de rank da thread que foi inserida chamando assure_behind
+            _inserted_in_front_of->link()->prev()->object()->for_all_behind(ASSURE_BEHIND);
         }
     }
     if (periodic() && (event & LEAVE)) {
+        // Guarda o tempo que passou depois que começou a execução da tarefa
         Tick in_cpu = elapsed() - _personal_statistics.job_enter_time;
         _personal_statistics.job_execution_time += in_cpu;
         for (unsigned int q = 0; q < QUEUES; q++)
         {
-            // Reduz tempo executado deste quantum
-            _personal_statistics.remaining_et[q] -= Timer_Common::time(in_cpu, frequency_within(q));
+            // Reduz o tempo executado deste quantum, transformando Tick em Microsecond
+            Microsecond executed_in_profile = Timer_Common::time(in_cpu, frequency_within(q));
+            if (executed_in_profile > _personal_statistics.remaining_et[q]) {
+                // underflow
+                _personal_statistics.remaining_et[q] = 0;
+            } else {
+                _personal_statistics.remaining_et[q] -= executed_in_profile;
+            }
         }
     }
+    // Quando uma thread periodica começa a tarefa
     if (periodic() && (event & ENTER)) {
         _personal_statistics.job_enter_time = elapsed();
     }
+    // Quando uma thread foi liberado para executar tarefa
     if (periodic() && (event & JOB_RELEASE)) {
         for (unsigned int q = 0; q < QUEUES; q++)
         {
-            _personal_statistics.remaining_et[q] = _personal_statistics.job_estimated_et[q];
+            // Atualiza tempo de execução restante para EET
+                        _personal_statistics.remaining_et[q] = _personal_statistics.job_estimated_et[q];
         }
     }
+    // Quando uma thread periodica termina tarefa
     if (periodic() && (event & JOB_FINISH)) {
         // (tempo de execução anterior + tempo de execução atual) / 2
         _personal_statistics.average_et = (_personal_statistics.average_et + _personal_statistics.job_execution_time) / 2;
@@ -174,6 +205,7 @@ void EAMQ::handle(Event event) {
 
         for (unsigned int q = 0; q < QUEUES; q++)
         {
+            // Atualiza EET da tarefa para cada fila (relativo a frequência)
             _personal_statistics.job_estimated_et[q] = Timer_Common::time(_personal_statistics.average_et, frequency_within(q));
         }
     }
@@ -188,17 +220,8 @@ void EAMQ::handle(Event event) {
     */
 }
 
-EAMQ::Optimal_Case EAMQ::rank_eamq() {
+int EAMQ::rank_eamq() {
 
-    // nota: atribuir c ao remaining_capacity se provido, se n usar estipulacao
-    // mas n aq
-
-    // Caso de deadline = 0 e periodo = 0 -> atribuir rank para deixar no ultimo da fila
-    // Se tarefa é periodica com deadline = 0 -> podemos usar periodo como deadline (?)
-
-    Optimal_Case optimal_case;
-
-    //for(unsigned int i = 0; i < QUEUES; i++) {
     for (unsigned int i = QUEUES - 1; i >= 0; i--) {
         Thread * t_fitted = nullptr;
 
@@ -211,6 +234,10 @@ EAMQ::Optimal_Case EAMQ::rank_eamq() {
         // Não avaliamos a possibilidade de inserir threads na frente de outras recém inseridas para evitarmos um possível loop infinito
         for (auto it = Thread::scheduler()->end(i); it != Thread::scheduler()->begin(i) && !it->object()->criterion().is_recent_insertion() ; it = it->prev()) {
             Thread * thread_in_queue = it->object();
+
+            // As ultimas threads da fila tendem a ser aperiodicas, então nós não queremos recalcular o rank delas
+            if (!thread_in_queue->criterion().periodic()) continue;
+
             // Thread da frente -> Tf
             // Thread que será inserido -> Ti
             int thread_capacity_remaining = thread_in_queue->criterion().personal_statistics().remaining_et[i];
@@ -222,7 +249,8 @@ EAMQ::Optimal_Case EAMQ::rank_eamq() {
             if (total_time_execution < int(Time_Base(_personal_statistics.remaining_deadline))) {
                 t_fitted = thread_in_queue;
                 // vai inserir na frente de alguem, entao salvar onde
-                optimal_case.jumped = t_fitted;
+                // optimal_case.jumped = t_fitted;
+                _inserted_in_front_of = t_fitted;
                 break;
             }
         }
@@ -245,17 +273,19 @@ EAMQ::Optimal_Case EAMQ::rank_eamq() {
         int idle_time = available_time_to_run - eet_remaining;
 
         if (idle_time >= 0) {
-            optimal_case.queue = i;
-            optimal_case.priority = cwt_profile;
-            // set_queue(i);
+            // optimal_case.queue = i;
+            // optimal_case.priority = cwt_profile;
+            set_queue(i);
+            _priority = cwt_profile;
             // return cwt_profile;
-            // optimal_case = {i, cwt_profile};
-            return optimal_case;
+            db<EAMQ>(TRC) << "Thread inserted in queue " << i << " with priority " << cwt_profile << endl;
+            return 1;
         }
     }
     // Não encontrou lugar na fila
     // return optimal_case;
-    return optimal_case;    // TRATAR
+    db<EAMQ>(TRC) << "Thread not inserted in any queue" << endl;
+    return 0;
 }
 
 int EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int looking_queue) {
