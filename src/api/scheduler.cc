@@ -111,19 +111,19 @@ void LLF::handle(Event event) {
 template FCFS::FCFS<>(int p);
 
 
-volatile unsigned EAMQ::_current_queue = QUEUES - 2;
+volatile unsigned EAMQ::_current_queue = QUEUES - 1;
 
+// Construtor para threads aperiódicas
 EAMQ::EAMQ(int p) : RT_Common(p) {
     // Aperiodic Threads (LOW priority) are thrown into the lowest frequency
     // and Threads with NORMAL into the penultimate one
-    db<EAMQ>(TRC) << "Construindo p:" << p << endl;
-    if (p > LOW) {
-        _queue = QUEUES - 2;
-    } else {
+    // Coloca thread MAIN e IDLE na mesma fila (fila com menor frequência possível)
+    if (p == MAIN || p == IDLE || p >= LOW) {
         _queue = QUEUES - 1;
+    } else {
+        // Se a prioridade é NORMAL ou HIGH
+        _queue = QUEUES - 2;
     }
-    // _queue = QUEUES - ((p == APERIODIC) ? 1 : 2);
-    db<EAMQ>(TRC) << "to queue:" << _queue << endl;
 }
 
 // -1 passado para RT_Common pois logo em seguida ele é atualizado
@@ -147,11 +147,19 @@ EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(-1, p, d, c) 
 void EAMQ::handle(Event event) {
     // Se thread foi preemptado / terminou
     if (event & LEAVE) {
-        // Avança para proxima fila
-        unsigned int last = _current_queue; 
+        unsigned int last = _current_queue;
+        db<EAMQ>(TRC) << "saiu da fila: " << _current_queue << endl;
+
+        // apagar isso e descomentar o de baixo se quiser
+        for (unsigned int i = 0; i < QUEUES; i++) {
+            db<EAMQ>(TRC) << i << " - " << Thread::scheduler()->size(i) << endl;
+        }
+
         do {
+            // Pula para próxima fila
             EAMQ::next_queue();
-            db<EAMQ>(TRC) << "current_queue=" << EAMQ::current_queue() << endl;
+            // db<EAMQ>(TRC) << _current_queue << " - " << Thread::scheduler()->size(_current_queue) << endl;
+        // Enquanto fila atual não vazia 
         } while (Thread::scheduler()->empty(_current_queue) && _current_queue != last);
 
         // Ajustando a frequência conforme a fila 
@@ -221,6 +229,17 @@ void EAMQ::handle(Event event) {
     }
     if (periodic() && (event & ASSURE_BEHIND)) {
 
+    }
+
+    // Se a thread MAIN for esperar em join, então ela chama um dispatch se escalonada, devemos garantir que não é a IDLE que recebe o dispatch 
+    // Se houver apenas duas threads na fila (MAIN e IDLE), então devemos passar para a próxima fila (IDLE sempre esta na ultima posicao)
+    if (event & MAIN_JOIN) {
+        db<EAMQ>(TRC) << "fila atual: " << _current_queue << endl;
+        db<EAMQ>(TRC) << "Tamanho da fila: " << Thread::scheduler()->size(_current_queue) << endl;
+        // Escolhe a proxima fila que tenha ao menos uma thread
+        do {
+            EAMQ::next_queue();
+        } while (Thread::scheduler()->empty(_current_queue));
     }
 
     /* a = new Job()        -> JOB_RELEASE, CREATE
@@ -326,3 +345,73 @@ int EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int lookin
 }
 
 __END_SYS
+
+
+/*
+Task(entry=0x80000038) => 0xffc3ffa0
+Thread(entry=0x80000038,state=0,priority=-1,queue=3,stack={b=0xffc3be14,s=16384}
+,context={b=0xffc3fde4,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00000000,
+sp=0xffb03c28,ip=0x80000038,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10,cr3=0x
+3fffc000}}) => 0xffc3fe1c
+Task::enroll(t=0, o=0xffc3fe1c)
+
+Thread(entry=0x800049bc,state=1,priority=2147483647,queue=3,stack={b=0xffc37c70,
+s=16384},context={b=0xffc3bc40,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x0
+0000000,sp=0xffb03c28,ip=0x800049bc,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=1
+0,cr3=0x3fffc000}}) => 0xffc3bc78
+Init_Application()
+Heap(addr=0x80401000,bytes=4194304) => 0x80400040
+
+Init_End()
+Hello world!
+
+Thread(entry=0x800000c9,state=1,priority=536870911,queue=2,stack={b=0xffc33c50,s
+=16384},context={b=0xffc37c20,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00
+000000,sp=0xffc3fc24,ip=0x800000c9,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10
+,cr3=0x3fffc000}}) => 0x80800e84
+Task::enroll(t=0, o=0x80800e84)
+
+Thread(entry=0x800000c9,state=1,priority=536870911,queue=2,stack={b=0xffc2fc30,s
+=16384},context={b=0xffc33c00,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00
+000000,sp=0xffc3fc24,ip=0x800000c9,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10
+,cr3=0x3fffc000}}) => 0x80800d00
+Task::enroll(t=0, o=0x80800d00)
+
+Thread(entry=0x800000c9,state=1,priority=536870911,queue=2,stack={b=0xffc2bc10,s
+=16384},context={b=0xffc2fbe0,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00
+000000,sp=0xffc3fc24,ip=0x800000c9,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10
+,cr3=0x3fffc000}}) => 0x80800b7c
+Task::enroll(t=0, o=0x80800b7c)
+
+Thread(entry=0x800000c9,state=1,priority=536870911,queue=2,stack={b=0xffc27bf0,s
+=16384},context={b=0xffc2bbc0,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00
+000000,sp=0xffc3fc24,ip=0x800000c9,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10
+,cr3=0x3fffc000}}) => 0x808009f8
+Task::enroll(t=0, o=0x808009f8)
+
+Thread(entry=0x800000c9,state=1,priority=536870911,queue=2,stack={b=0xffc23bd0,s
+=16384},context={b=0xffc27ba0,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00
+000000,sp=0xffc3fc24,ip=0x800000c9,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10
+,cr3=0x3fffc000}}) => 0x80800874
+Task::enroll(t=0, o=0x80800874)
+
+Thread::join(this=0x80800e84,state=1)
+Thread::dispatch(prev=0xffc3fe1c,next=0xffc3bc78)
+Thread::idle(this=0x80800e84)
+Thread::dispatch(prev=0x80800e84,next=0x80800d00)
+bruh
+Thread::exit(status=0) [running=0x80800d00]
+Thread::dispatch(prev=0x80800d00,next=0x808009f8)
+bruh
+Thread::exit(status=0) [running=0x808009f8]
+Thread::dispatch(prev=0x808009f8,next=0x80800e84)
+Thread::dispatch(prev=0x80800e84,next=0x80800b7c)
+bruh
+Thread::exit(status=0) [running=0x80800b7c]
+Thread::dispatch(prev=0x80800b7c,next=0x80800e84)
+Thread::dispatch(prev=0x80800e84,next=0x80800874)
+bruh
+Thread::exit(status=0) [running=0x80800874]
+Thread::dispatch(prev=0x80800874,next=0x80800e84)
+
+ */

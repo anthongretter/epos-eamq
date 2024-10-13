@@ -126,7 +126,6 @@ int Thread::join()
     lock();
 
     db<Thread>(TRC) << "Thread::join(this=" << this << ",state=" << _state << ")" << endl;
-
     // Precondition: no Thread::self()->join()
     assert(running() != this);
 
@@ -140,6 +139,7 @@ int Thread::join()
         prev->_state = SUSPENDED;
         _scheduler.suspend(prev); // implicitly choose() if suspending chosen()
 
+        criterion().handle(Priority::MAIN_JOIN);
         Thread * next = _scheduler.chosen();
 
         dispatch(prev, next);
