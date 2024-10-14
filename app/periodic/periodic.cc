@@ -1,6 +1,7 @@
 #include <utility/ostream.h>
-#include <process.h>
+#include <real-time.h>
 #include <time.h>
+#include <utility/random.h>
 
 using namespace EPOS;
 
@@ -8,11 +9,7 @@ OStream cout;
 
 int bruh(int n)
 {
-
     cout << "bruh " << n << endl;
-    Alarm::delay(100000);
-    cout << "bruh " << n << endl;
-
     return 0;
 }
 
@@ -20,17 +17,23 @@ int main()
 {
     cout << "Hello world!" << endl;
 
-    const int N_THREADS = 5;
+    const int N_THREADS = 1;
+    const Microsecond BASE = 10000;
     Thread *ts[N_THREADS];
 
     for (int i = 0; i < N_THREADS; i++)
     {
-        // Thread aperiódica
-        ts[i] = new Thread(&bruh, i);
+        auto conf = Periodic_Thread::Configuration(
+            BASE,
+            Periodic_Thread::SAME,
+            Periodic_Thread::UNKNOWN,
+            Periodic_Thread::NOW,
+            2
+        );
+        ts[i] = new Periodic_Thread(conf, &bruh, i);
     }
 
     for (int i = 0; i < N_THREADS; i++) {
-        // Thread aperiódica
         ts[i]->join();
     }
 

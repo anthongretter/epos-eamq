@@ -1306,7 +1306,14 @@ public:
     Iterator end() { return Iterator(0); }
     Iterator end(unsigned int queue) { return Iterator(_list[queue].tail()); }
 
-    Element *volatile &chosen() { return _chosen; }
+    // Se não tem _chosen -> escolhe chosen
+    Element *volatile &chosen() {
+        if (!_chosen) {
+            choose();
+        }
+        return _chosen;
+    }
+
     // Element *volatile &chosen(unsigned int queue)
     // {
     //     return _list[queue].chosen();
@@ -1314,10 +1321,12 @@ public:
 
     void insert(Element *e)
     {
+        // Se é primeiro a ser inserido -> chosen vai ser ele mesmo
         if (_total_size == 0 ) {
             _chosen = e;
         }
 
+        // Insere o elemento na sublista especifica 
         _list[e->rank().queue()].insert(e);
         _total_size++;
     }
@@ -1358,6 +1367,8 @@ public:
 
         // return _list[R::current_queue()].choose_another();
 
+        // preciso garantir que a fila tenha mais do que um elemento
+        // talvez iterar para next até um que não tenha chamado choose_another? pois e se o segundo resolver chamar também?
         _chosen = _list[R::current_queue()].head()->next();
         return _chosen;
     }

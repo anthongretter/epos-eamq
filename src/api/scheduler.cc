@@ -133,17 +133,20 @@ EAMQ::EAMQ(int p) : RT_Common(p)
 // -1 passado para RT_Common pois logo em seguida ele é atualizado
 EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c) : RT_Common(-1, p, d, c)
 {
+    db<EAMQ>(TRC) << "ranking with p: " << p << endl;
     d = (d ? d : p);
 
     if (c != UNKNOWN) {
         _personal_statistics.average_et = c;
     } else {
-        _personal_statistics.average_et = time(d) / 3;   // initial ET estimation (1/3 of deadline)
+        _personal_statistics.average_et = ticks(d) / 3;   // initial ET estimation (1/3 of deadline)
+        // db<EAMQ>(TRC) << ": " << p << endl;
     }
-
+    
     _personal_statistics.remaining_deadline = d;
 
     int success = rank_eamq();
+    db<EAMQ>(TRC) << "ranked with: " << _priority << endl;
     if (!success) {
         // something?
     }
@@ -170,6 +173,13 @@ void EAMQ::handle(Event event) {
         CPU::clock(frequency_within(_current_queue));
     }
     if (event & CREATE) {
+        for (int q = 0; q < QUEUES; q++) {
+            db<EAMQ>(TRC) << "Fila " << q << ": ";
+            for (auto it = Thread::scheduler()->end(q); &(*it) != nullptr; it = it->prev()) {
+                db<EAMQ>(TRC) << it << " ";
+            }
+        db<EAMQ>(TRC) << endl;
+        }
     }
     if (event & UPDATE) {
     }

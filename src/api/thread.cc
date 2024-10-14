@@ -263,6 +263,7 @@ void Thread::sleep(Queue * q)
     prev->_waiting = q;
     q->insert(&prev->_link);
 
+    prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread * next = _scheduler.chosen();
 
     dispatch(prev, next);
