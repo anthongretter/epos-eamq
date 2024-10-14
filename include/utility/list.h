@@ -1046,7 +1046,7 @@ public:
 
     void insert(Element *e)
     {
-        db<Lists>(TRC) << "Ordered_List::insert(e=" << e
+        db<EAMQ>(TRC) << "Ordered_List::insert(e=" << e
                        << ") => {p=" << (e ? e->prev() : (void *)-1)
                        << ",o=" << (e ? e->object() : (void *)-1)
                        << ",n=" << (e ? e->next() : (void *)-1)
@@ -1192,7 +1192,7 @@ public:
 
     void insert(Element *e)
     {
-        db<Lists>(TRC) << "Scheduling_List::insert(e=" << e
+        db<EAMQ>(TRC) << "Scheduling_List::insert(e=" << e
                        << ") => {p=" << (e ? e->prev() : (void *)-1)
                        << ",o=" << (e ? e->object() : (void *)-1)
                        << ",n=" << (e ? e->next() : (void *)-1)
@@ -1269,6 +1269,117 @@ private:
     void chosen(Element *e) { _chosen = e; }
 
 private:
+    Element *volatile _chosen;
+};
+
+// Estrutura de lista similar a Multilist, com único chosen
+// Adaptando para nosso algoritmo
+template <typename T,
+          typename R = typename T::Criterion,
+          typename El = List_Elements::Doubly_Linked_Scheduling<T, R>,
+          typename L = Ordered_List<T, R, El>,
+          unsigned int Q = R::QUEUES>
+class Scheduling_Multilist_Single_Chosen
+{
+public:
+    typedef T Object_Type;
+    typedef R Rank_Type;
+    typedef El Element;
+    typedef typename L::Iterator Iterator;
+
+public:
+    Scheduling_Multilist_Single_Chosen() { _total_size = 0; }
+
+    bool empty() const { return _list[R::current_queue()].empty(); }
+    bool empty(unsigned int queue) { return _list[queue].empty(); }
+
+    unsigned long size() const { return _list[R::current_queue()].size(); }
+    unsigned long size(unsigned int queue) const { return _list[queue].size(); }
+
+    unsigned long total_size() const { return _total_size; }
+
+    Element *head() { return _list[R::current_queue()].head(); }
+    Element *tail() { return _list[R::current_queue()].tail(); }
+
+    Iterator begin() { return Iterator(_list[R::current_queue()].head()); }
+    Iterator begin(unsigned int queue) { return Iterator(_list[queue].head()); }
+    Iterator end() { return Iterator(0); }
+    Iterator end(unsigned int queue) { return Iterator(_list[queue].tail()); }
+
+    Element *volatile &chosen() { return _chosen; }
+    // Element *volatile &chosen(unsigned int queue)
+    // {
+    //     return _list[queue].chosen();
+    // }
+
+    void insert(Element *e)
+    {
+        if (_total_size == 0 ) {
+            _chosen = e;
+        }
+
+        _list[e->rank().queue()].insert(e);
+        _total_size++;
+    }
+
+    Element *remove(Element *e)
+    {
+        // Pagamos o preco desse if para man
+        if (e == _chosen)
+        {
+            _chosen = 0;
+        }
+        _total_size--;
+
+        return _list[e->rank().queue()].remove(e);
+    }
+
+    Element *choose()
+    {
+        // if (_list[R::current_queue()].chosen()->rank().queue() != R::current_queue())
+        // {
+        //     db<EAMQ>(TRC) << "AAAAAAA" << endl;
+        //     insert(_list[R::current_queue()].chosen());
+        //     _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
+        // }
+
+        // return _list[R::current_queue()].choose();
+        _chosen = _list[R::current_queue()].head();
+        return _chosen;
+    }
+
+    Element *choose_another()
+    {
+        // if (_list[R::current_queue()].chosen()->rank().queue() != R::current_queue())
+        // {
+        //     insert(_list[R::current_queue()].chosen());
+        //     _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
+        // }
+
+        // return _list[R::current_queue()].choose_another();
+
+        _chosen = _list[R::current_queue()].head()->next();
+        return _chosen;
+    }
+
+    Element *choose(Element *e)
+    {
+        // if (_list[R::current_queue()].chosen()->rank().queue() != R::current_queue())
+        // {
+        //     insert(_list[R::current_queue()].chosen());
+        //     _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
+        // }
+
+        // return _list[e->rank().queue()].choose(e);
+
+        
+        _chosen = e;
+        return _chosen;
+    }
+
+private:
+    L _list[Q];
+    unsigned int _total_size;
     Element *volatile _chosen;
 };
 
@@ -1449,6 +1560,9 @@ public:
 
     void insert(Element *e)
     {
+        // if (_list[e->rank().queue()].empty() && e->rank() != -1) {
+        //     _list[e->rank().queue()].insert_bruh(e);
+        // }
         _list[e->rank().queue()].insert(e);
     }
 
@@ -1461,6 +1575,7 @@ public:
     {
         if (_list[R::current_queue()].chosen()->rank().queue() != R::current_queue())
         {
+            db<EAMQ>(TRC) << "AAAAAAA" << endl;
             insert(_list[R::current_queue()].chosen());
             _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
         }

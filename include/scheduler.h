@@ -63,7 +63,6 @@ public:
         LEAVE = 1 << 3,
         JOB_RELEASE = 1 << 4,
         JOB_FINISH = 1 << 5,
-        MAIN_JOIN = 1 << 7 // Caso MAIN espera por outra thread
     };
 
     // Policy operations
@@ -304,7 +303,8 @@ public:
     enum
     {
         ASSURE_BEHIND = 1 << 6,
-        MAIN_JOIN = 1 << 7
+        CHANGE_QUEUE = 1 << 7,
+        MAIN_JOIN = 1 << 8
     };
 
     struct Personal_Statistics
@@ -329,7 +329,7 @@ public:
     int rank_eamq();
     const volatile unsigned int &queue() const volatile { return _queue; }; // returns the Thread's queue
 
-    static unsigned int current_queue() { return _current_queue; }; // current global queue
+    static const volatile unsigned int &current_queue() { return _current_queue; }; // current global queue
     static void next_queue() { ++_current_queue %= QUEUES; }        // points to next global queue with threads
 
 protected:
@@ -363,7 +363,7 @@ __END_SYS
 __BEGIN_UTIL
 
 template <typename T>
-class Scheduling_Queue<T, EAMQ> : public Scheduling_Multilist<T>
+class Scheduling_Queue<T, EAMQ> : public Scheduling_Multilist_Single_Chosen<T>
 {
 };
 

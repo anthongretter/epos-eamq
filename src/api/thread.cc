@@ -138,8 +138,8 @@ int Thread::join()
         _joining = prev;
         prev->_state = SUSPENDED;
         _scheduler.suspend(prev); // implicitly choose() if suspending chosen()
-
-        criterion().handle(Priority::MAIN_JOIN);
+        // Verifica se só tem IDLE na fila que estava o MAIN -> avança current_queue para proxima fila
+        prev->criterion().handle(EAMQ::MAIN_JOIN);
         Thread * next = _scheduler.chosen();
 
         dispatch(prev, next);
@@ -242,6 +242,7 @@ void Thread::exit(int status)
         prev->_joining = 0;
     }
 
+    prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread * next = _scheduler.choose(); // at least idle will always be there
 
     dispatch(prev, next);
@@ -373,6 +374,8 @@ void Thread::reschedule()
     assert(locked()); // locking handled by caller
 
     Thread * prev = running();
+    // Atualiza current_queue para proxima fila (next tem que ser thread da proxima fila)
+    prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread * next = _scheduler.choose();
 
     dispatch(prev, next);

@@ -43,9 +43,9 @@ void RT_Common::handle(Event event) {
 
         _statistics.thread_last_preemption = elapsed();
         _statistics.thread_execution_time += cpu_time;
-//        if(_statistics.job_released) {
-            _statistics.job_utilization += cpu_time;
-//        }
+        //        if(_statistics.job_released) {
+        _statistics.job_utilization += cpu_time;
+        //        }
     }
     if(periodic() && (event & JOB_RELEASE)) {
         db<Thread>(TRC) << "RELEASE";
@@ -62,7 +62,7 @@ void RT_Common::handle(Event event) {
         _statistics.job_released = false;
         _statistics.job_finish = elapsed();
         _statistics.jobs_finished++;
-//        _statistics.job_utilization += elapsed() - _statistics.thread_last_dispatch;
+        //        _statistics.job_utilization += elapsed() - _statistics.thread_last_dispatch;
     }
     if(event & COLLECT) {
         db<Thread>(TRC) << "|COLLECT";
@@ -104,7 +104,7 @@ void LLF::handle(Event event) {
     RT_Common::handle(event);
 
     // Update the priority of the thread at job releases, before _alarm->v(), so it enters the queue in the right order (called from Periodic_Thread::Xxx_Handler)
-//    if((_priority >= PERIODIC) && (_priority < APERIODIC) && ((event & JOB_FINISH) || (event & UPDATE_ALL)))
+    //    if((_priority >= PERIODIC) && (_priority < APERIODIC) && ((event & JOB_FINISH) || (event & UPDATE_ALL)))
 }
 
 // Since the definition of FCFS above is only known to this unit, forcing its instantiation here so it gets emitted in scheduler.o for subsequent linking with other units is necessary.
@@ -114,7 +114,8 @@ template FCFS::FCFS<>(int p);
 volatile unsigned EAMQ::_current_queue = QUEUES - 1;
 
 // Construtor para threads aperiódicas
-EAMQ::EAMQ(int p) : RT_Common(p) {
+EAMQ::EAMQ(int p) : RT_Common(p)
+{
     // Aperiodic Threads (LOW priority) are thrown into the lowest frequency
     // and Threads with NORMAL into the penultimate one
     // Coloca thread MAIN e IDLE na mesma fila (fila com menor frequência possível)
@@ -124,10 +125,14 @@ EAMQ::EAMQ(int p) : RT_Common(p) {
         // Se a prioridade é NORMAL ou HIGH
         _queue = QUEUES - 2;
     }
+    // _queue = 3;
+    
+    // _queue = QUEUES - 1;
 }
 
 // -1 passado para RT_Common pois logo em seguida ele é atualizado
-EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(-1, p, d, c) {
+EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c) : RT_Common(-1, p, d, c)
+{
     d = (d ? d : p);
 
     if (c != UNKNOWN) {
@@ -146,23 +151,22 @@ EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c): RT_Common(-1, p, d, c) 
 
 void EAMQ::handle(Event event) {
     // Se thread foi preemptado / terminou
+    if (event & ENTER) {
+        // db<EAMQ>(TRC) << "entrando: " << _queue << endl;
+    }
     if (event & LEAVE) {
+        // db<EAMQ>(TRC) << "saindo: " << _queue << endl;
+    }
+    if (event & CHANGE_QUEUE) {
         unsigned int last = _current_queue;
-        db<EAMQ>(TRC) << "saiu da fila: " << _current_queue << endl;
-
-        // apagar isso e descomentar o de baixo se quiser
-        for (unsigned int i = 0; i < QUEUES; i++) {
-            db<EAMQ>(TRC) << i << " - " << Thread::scheduler()->size(i) << endl;
-        }
 
         do {
             // Pula para próxima fila
             EAMQ::next_queue();
-            // db<EAMQ>(TRC) << _current_queue << " - " << Thread::scheduler()->size(_current_queue) << endl;
-        // Enquanto fila atual não vazia 
+            // Enquanto fila atual não vazia
         } while (Thread::scheduler()->empty(_current_queue) && _current_queue != last);
 
-        // Ajustando a frequência conforme a fila 
+        // Ajustando a frequência conforme a fila
         CPU::clock(frequency_within(_current_queue));
     }
     if (event & CREATE) {
@@ -231,22 +235,26 @@ void EAMQ::handle(Event event) {
 
     }
 
-    // Se a thread MAIN for esperar em join, então ela chama um dispatch se escalonada, devemos garantir que não é a IDLE que recebe o dispatch 
-    // Se houver apenas duas threads na fila (MAIN e IDLE), então devemos passar para a próxima fila (IDLE sempre esta na ultima posicao)
-    if (event & MAIN_JOIN) {
-        db<EAMQ>(TRC) << "fila atual: " << _current_queue << endl;
-        db<EAMQ>(TRC) << "Tamanho da fila: " << Thread::scheduler()->size(_current_queue) << endl;
-        // Escolhe a proxima fila que tenha ao menos uma thread
-        do {
-            EAMQ::next_queue();
-        } while (Thread::scheduler()->empty(_current_queue));
-    }
+    // // Se a thread MAIN for esperar em join, então ela chama um dispatch se escalonada, devemos garantir que não é a IDLE que recebe o dispatch
+    // // Se houver apenas duas threads na fila (MAIN e IDLE), então devemos passar para a próxima fila (IDLE sempre esta na ultima posicao)
+    // if (event & MAIN_JOIN)
+    // {
+    //     unsigned int last = _current_queue;
+
+    //     do {
+    //         // Pula para próxima fila
+    //         EAMQ::next_queue();
+    //         // Enquanto fila atual não vazia
+    //     } while (Thread::scheduler()->empty(_current_queue) && _current_queue != last);
+
+    //     // alterar a frequência do processador igual no CHANGE_QUEUE
+    // }
 
     /* a = new Job()        -> JOB_RELEASE, CREATE
-    * [b] premptado por [a] -> ENTER (a), LEAVE (b)
-    * a acabou tarefa :(    -> JOB_FINISH
-    * a tem nova tarefa >:) -> JOB_RELEASE 
-    */
+     * [b] premptado por [a] -> ENTER (a), LEAVE (b)
+     * a acabou tarefa :(    -> JOB_FINISH
+     * a tem nova tarefa >:) -> JOB_RELEASE
+     */
 }
 
 int EAMQ::rank_eamq() {
@@ -257,7 +265,7 @@ int EAMQ::rank_eamq() {
         // tempo de execução restante estimado
         int eet_remaining = _personal_statistics.remaining_et[i];
 
-        // calcula round profile waiting time 
+        // calcula round profile waiting time
         int rp_waiting_time = estimate_rp_waiting_time(eet_remaining, i);
 
         // Não avaliamos a possibilidade de inserir threads na frente de outras recém inseridas para evitarmos um possível loop infinito
@@ -270,10 +278,10 @@ int EAMQ::rank_eamq() {
             // Thread da frente -> Tf
             // Thread que será inserido -> Ti
             int thread_capacity_remaining = thread_in_queue->criterion().personal_statistics().remaining_et[i];
-            int total_time_execution = thread_in_queue->priority()          //tempo de espera da (Tf)
-                    + (thread_capacity_remaining * 115 / 100)               //tempo de execução da (Tf)
-                    + eet_remaining                                         //tempo de execução (Ti)
-                    + rp_waiting_time;                                      //tempo de espera por RP (Ti)
+            int total_time_execution = thread_in_queue->priority()               // tempo de espera da (Tf)
+                                       + (thread_capacity_remaining * 115 / 100) // tempo de execução da (Tf)
+                                       + eet_remaining                           // tempo de execução (Ti)
+                                       + rp_waiting_time;                        // tempo de espera por RP (Ti)
 
             if (total_time_execution < int(Time_Base(_personal_statistics.remaining_deadline))) {
                 t_fitted = thread_in_queue;
@@ -288,7 +296,7 @@ int EAMQ::rank_eamq() {
         if (!t_fitted) {
             continue;
         }
-        
+
         // Se a fila estiver vazia t_fitted = NULL
         int t_fitted_capacity_remaining = 0;
 
@@ -338,7 +346,7 @@ int EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int lookin
         }
         oc++;
     }
-        
+
     int rp_waiting_time = Q * (oc) * (rp_rounds);
 
     return rp_waiting_time;
@@ -346,6 +354,69 @@ int EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int lookin
 
 __END_SYS
 
+/*
+Thread(entry=0x800000c9,state=1,priority=536870911,queue=3,stack={b=0xffc33c50,s
+=16384},context={b=0xffc37c20,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00
+000000,sp=0xffc3fc34,ip=0x800000c9,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10
+,cr3=0x3fffc000}}) => 0x80800e84
+Task::enroll(t=0, o=0x80800e84)
+0 - 0
+1 - 0
+2 - 0
+3 - 2
+Thread(entry=0x800000c9,state=1,priority=536870911,queue=3,stack={b=0xffc2fc30,s
+=16384},context={b=0xffc33c00,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00
+000000,sp=0xffc3fc34,ip=0x800000c9,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10
+,cr3=0x3fffc000}}) => 0x80800d00
+Task::enroll(t=0, o=0x80800d00)
+0 - 0
+1 - 0
+2 - 0
+3 - 3
+Thread::join(this=0x80800e84,state=1)
+0 - 0
+1 - 0
+2 - 0
+3 - 2
+saindo: 3
+entrando: 3
+Thread::dispatch(prev=0xffc3fe1c,next=0x80800e84)
+bruh
+Thread::exit(status=0) [running=0x80800e84]
+0 - 0
+1 - 0
+2 - 0
+3 - 2
+saindo: 3
+entrando: 3
+Thread::dispatch(prev=0x80800e84,next=0xffc3fe1c)
+Thread::join(this=0x80800d00,state=1)
+0 - 0
+1 - 0
+2 - 0
+3 - 1
+saindo: 3
+entrando: 3
+Thread::dispatch(prev=0xffc3fe1c,next=0x80800d00)
+bruh
+Thread::exit(status=0) [running=0x80800d00]
+0 - 0
+1 - 0
+2 - 0
+3 - 1
+saindo: 3
+entrando: 3
+Thread::dispatch(prev=0x80800d00,next=0xffc3fe1c)
+Thread::exit(status=0) [running=0xffc3fe1c]
+0 - 0
+1 - 0
+2 - 0
+3 - 0
+saindo: 3
+entrando: 3
+Thread::dispatch(prev=0xffc3fe1c,next=0xffc3bc78)
+Thread::idle(this=0xffc3bc78)
+*/
 
 /*
 Task(entry=0x80000038) => 0xffc3ffa0
@@ -415,3 +486,45 @@ Thread::exit(status=0) [running=0x80800874]
 Thread::dispatch(prev=0x80800874,next=0x80800e84)
 
  */
+
+ /*
+Task(entry=0x80000038) => 0xffc3ffa0
+Thread(entry=0x80000038,state=0,priority=-1,queue=3,stack={b=0xffc3be14,s=16384}
+,context={b=0xffc3fde4,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00000000,
+sp=0xffb03c28,ip=0x80000038,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10,cr3=0x
+3fffc000}}) => 0xffc3fe1c
+Task::enroll(t=0, o=0xffc3fe1c)
+
+Thread(entry=0x8000494a,state=1,priority=2147483647,queue=3,stack={b=0xffc37c70,
+s=16384},context={b=0xffc3bc40,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x0
+0000000,sp=0xffb03c28,ip=0x8000494a,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=1
+0,cr3=0x3fffc000}}) => 0xffc3bc78
+
+Init_Application()
+Heap(addr=0x80401000,bytes=4194304) => 0x80400040
+Init_End()
+Hello world!
+
+Thread(entry=0x800000c9,state=1,priority=536870911,queue=2,stack={b=0xffc33c50,s
+=16384},context={b=0xffc37c20,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00
+000000,sp=0xffc3fc34,ip=0x800000c9,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10
+,cr3=0x3fffc000}}) => 0x80800e84
+Task::enroll(t=0, o=0x80800e84)
+
+Thread(entry=0x800000c9,state=1,priority=536870911,queue=2,stack={b=0xffc2fc30,s
+=16384},context={b=0xffc33c00,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00
+000000,sp=0xffc3fc34,ip=0x800000c9,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10
+,cr3=0x3fffc000}}) => 0x80800d00
+Task::enroll(t=0, o=0x80800d00)
+
+Thread::dispatch(prev=0xffc3fe1c,next=0x80800d00)   MAIN -> BRUH2
+bruh
+
+Thread::exit(status=0) [running=0x80800d00]         BRUH2 FINALIZADO
+Thread::dispatch(prev=0x80800d00,next=0xffc3fe1c)   BRUH2 -> MAIN
+Thread::join(this=0x80800e84,state=1)               Main faz join BRUH1
+Thread::dispatch(prev=0xffc3fe1c,next=0xffc3bc78)   Main -> IDLE
+Thread::idle(this=0xffc3bc78)                       Idle
+make[2]: Leaving directory '/app/img'
+make[1]: Leaving directory '/app'
+  */
