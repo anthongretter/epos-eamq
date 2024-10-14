@@ -1046,7 +1046,7 @@ public:
 
     void insert(Element *e)
     {
-        db<EAMQ>(TRC) << "Ordered_List::insert(e=" << e
+        db<Lists>(TRC) << "Ordered_List::insert(e=" << e
                        << ") => {p=" << (e ? e->prev() : (void *)-1)
                        << ",o=" << (e ? e->object() : (void *)-1)
                        << ",n=" << (e ? e->next() : (void *)-1)
@@ -1192,7 +1192,7 @@ public:
 
     void insert(Element *e)
     {
-        db<EAMQ>(TRC) << "Scheduling_List::insert(e=" << e
+        db<Lists>(TRC) << "Scheduling_List::insert(e=" << e
                        << ") => {p=" << (e ? e->prev() : (void *)-1)
                        << ",o=" << (e ? e->object() : (void *)-1)
                        << ",n=" << (e ? e->next() : (void *)-1)
@@ -1299,12 +1299,17 @@ public:
     unsigned long total_size() const { return _total_size; }
 
     Element *head() { return _list[R::current_queue()].head(); }
+    Element *head(unsigned int i) { return _list[i].head(); }
     Element *tail() { return _list[R::current_queue()].tail(); }
+    Element *tail(unsigned int i) { return _list[i].tail(); }
 
     Iterator begin() { return Iterator(_list[R::current_queue()].head()); }
     Iterator begin(unsigned int queue) { return Iterator(_list[queue].head()); }
     Iterator end() { return Iterator(0); }
     Iterator end(unsigned int queue) { return Iterator(_list[queue].tail()); }
+
+    // Quantidade de filas ocupadas em determinado momento
+    const int occupied_queues() { return _occupied_queues; }
 
     // Se não tem _chosen -> escolhe chosen
     Element *volatile &chosen() {
@@ -1314,16 +1319,16 @@ public:
         return _chosen;
     }
 
-    // Element *volatile &chosen(unsigned int queue)
-    // {
-    //     return _list[queue].chosen();
-    // }
-
     void insert(Element *e)
     {
         // Se é primeiro a ser inserido -> chosen vai ser ele mesmo
         if (_total_size == 0 ) {
             _chosen = e;
+        }
+
+        if (_list[e->rank().queue()].empty())
+        {
+            _occupied_queues++;
         }
 
         // Insere o elemento na sublista especifica 
@@ -1338,6 +1343,12 @@ public:
         {
             _chosen = 0;
         }
+
+        if (_list[e->rank().queue()].size() == 1)
+        {
+            _occupied_queues--;
+        }
+
         _total_size--;
 
         return _list[e->rank().queue()].remove(e);
@@ -1345,45 +1356,19 @@ public:
 
     Element *choose()
     {
-        // if (_list[R::current_queue()].chosen()->rank().queue() != R::current_queue())
-        // {
-        //     db<EAMQ>(TRC) << "AAAAAAA" << endl;
-        //     insert(_list[R::current_queue()].chosen());
-        //     _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
-        // }
-
-        // return _list[R::current_queue()].choose();
         _chosen = _list[R::current_queue()].head();
         return _chosen;
     }
 
+    // TODO: Improve this method
     Element *choose_another()
     {
-        // if (_list[R::current_queue()].chosen()->rank().queue() != R::current_queue())
-        // {
-        //     insert(_list[R::current_queue()].chosen());
-        //     _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
-        // }
-
-        // return _list[R::current_queue()].choose_another();
-
-        // preciso garantir que a fila tenha mais do que um elemento
-        // talvez iterar para next até um que não tenha chamado choose_another? pois e se o segundo resolver chamar também?
         _chosen = _list[R::current_queue()].head()->next();
         return _chosen;
     }
 
     Element *choose(Element *e)
-    {
-        // if (_list[R::current_queue()].chosen()->rank().queue() != R::current_queue())
-        // {
-        //     insert(_list[R::current_queue()].chosen());
-        //     _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
-        // }
-
-        // return _list[e->rank().queue()].choose(e);
-
-        
+    {   
         _chosen = e;
         return _chosen;
     }
@@ -1391,6 +1376,7 @@ public:
 private:
     L _list[Q];
     unsigned int _total_size;
+    unsigned int _occupied_queues; 
     Element *volatile _chosen;
 };
 
@@ -1586,7 +1572,6 @@ public:
     {
         if (_list[R::current_queue()].chosen()->rank().queue() != R::current_queue())
         {
-            db<EAMQ>(TRC) << "AAAAAAA" << endl;
             insert(_list[R::current_queue()].chosen());
             _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
         }

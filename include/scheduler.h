@@ -129,11 +129,6 @@ public:
     Microsecond deadline() { return 0; }
     Microsecond capacity() { return 0; }
 
-    // bool is_recent_insertion() { return false; }
-    // void is_recent_insertion(bool a) {}
-    // int rank_eamq() { return 0; }
-    // const volatile unsigned int queue() const volatile { return 0; };    // returns the Thread's queue
-
     bool periodic() { return false; }
 
     volatile Statistics &statistics() { return _statistics; }
@@ -257,8 +252,7 @@ public:
 public:
     LM(int p = APERIODIC) : RT_Common(p) {}
     LM(Microsecond p, Microsecond d, Microsecond c) : RT_Common(int(ticks((d ? d : p) - c)), p, d, c) {}
-}; // Mas para deixar extensivel acho melhor deixar como parametro,
-   // pq ai podemos passar evento personalizado, como, no nosso caso, o ASSURE_BEHIND
+}; 
 
 // Earliest Deadline First
 class EDF : public RT_Common
@@ -291,9 +285,8 @@ class EAMQ : public RT_Common
 {
 
 public:
-    static const unsigned short QUEUES = 4; // or maybe a trait?
+    static const unsigned short QUEUES = 4;
     static const unsigned int Q = Traits<Thread>::QUANTUM;
-
     static const bool dynamic = true;
 
 public:
@@ -304,18 +297,19 @@ public:
     {
         ASSURE_BEHIND = 1 << 6,
         CHANGE_QUEUE = 1 << 7,
-        MAIN_JOIN = 1 << 8
+        RESUME_THREAD = 1 << 8,
+        // LEAVING_QUEUE = 1 << 9   // Nao implementado ainda
     };
 
     struct Personal_Statistics
     {
-        Microsecond remaining_deadline;
-        Microsecond remaining_et[QUEUES];     // tempo de execucao restante em cada frequencia (inicia como job_estimated_et)
-        Microsecond job_estimated_et[QUEUES]; // tempo de execução estimado em cada frequencia dada media
+        Microsecond remaining_deadline;         // deadline restante 
+        Microsecond remaining_et[QUEUES];       // tempo de execucao restante em cada frequencia (inicia como job_estimated_et)
+        Microsecond job_estimated_et[QUEUES];   // tempo de execução estimado em cada frequencia dada media
+        Microsecond average_et[QUEUES];         // tempo de execução média ponderada
 
-        Tick job_enter_time;     // tempo de entrada do ultimo job
-        Tick job_execution_time; // tempo de execução real acumulada da tarefa
-        Tick average_et;         // tempo de execução média ponderada
+        Microsecond job_execution_time; // tempo de execução real acumulada da tarefa
+        Tick job_enter_tick;            // tempo de entrada do ultimo job
     };
 
     void handle(Event event);
@@ -325,7 +319,6 @@ public:
     const bool is_recent_insertion() { return _is_recent_insertion; }
     void is_recent_insertion(bool b) { _is_recent_insertion = b; }
 
-    // TODO trocar nome (evaluate maybe?)
     int rank_eamq();
     const volatile unsigned int &queue() const volatile { return _queue; }; // returns the Thread's queue
 
@@ -335,7 +328,7 @@ public:
 protected:
     void set_queue(unsigned int q) { _queue = q; };
 
-    /* Em caso de 4 filas:
+    /* Em caso de 4 filas em relacao a frequencia maxima:
      *   0 -> 100%
      *   1 -> 87%
      *   2 -> 75%
@@ -343,14 +336,16 @@ protected:
      */
     static Hertz frequency_within(unsigned int queue)
     {
-        return CPU::max_clock() - (((CPU::max_clock() * 125) / 1000) * (queue % QUEUES));
+        Hertz f = CPU::max_clock() - (((CPU::max_clock() / 1000) * 125) * queue);
+        return f;
     };
+
 
 protected:
     volatile unsigned int _queue;
     bool _is_recent_insertion;
     Personal_Statistics _personal_statistics;
-    Thread *_inserted_in_front_of;
+    Thread *_behind_of;
 
     static volatile unsigned _current_queue;
 

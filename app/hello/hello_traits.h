@@ -21,7 +21,7 @@ struct Traits<Build> : public Traits_Tokens
     // Default flags
     static const bool enabled = true;
     static const bool monitored = true;
-    static const bool debugged = true;
+    static const bool debugged = false;
     static const bool hysterically_debugged = false;
 };
 
@@ -32,25 +32,31 @@ struct Traits<Debug> : public Traits<Build>
     static const bool error = true;
     static const bool warning = true;
     static const bool info = false;
-    static const bool trace = true;
+    static const bool trace = false;
+};
+
+template <>
+struct Traits<EAMQ> : public Traits<Build>
+{
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Lists> : public Traits<Build>
 {
-    static const bool debugged = hysterically_debugged;
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Spin> : public Traits<Build>
 {
-    static const bool debugged = hysterically_debugged;
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Heaps> : public Traits<Build>
 {
-    static const bool debugged = hysterically_debugged;
+    static const bool debugged = false;
 };
 
 template <>
@@ -58,28 +64,32 @@ struct Traits<Observers> : public Traits<Build>
 {
     // Some observed objects are created before initializing the Display
     // Enabling debug may cause trouble in some Machines
-    static const bool debugged = true;
+    static const bool debugged = false;
 };
 
 // System Parts (mostly to fine control debugging)
 template <>
 struct Traits<Boot> : public Traits<Build>
 {
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Setup> : public Traits<Build>
 {
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Init> : public Traits<Build>
 {
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Framework> : public Traits<Build>
 {
+    static const bool debugged = false;
 };
 
 template <>
@@ -130,6 +140,8 @@ struct Traits<Thread> : public Traits<Build>
 
     typedef EAMQ Criterion;
     static const unsigned int QUANTUM = 10000; // us
+
+    static const bool debugged = false;
 };
 
 template <>
@@ -142,22 +154,26 @@ template <>
 struct Traits<Synchronizer> : public Traits<Build>
 {
     static const bool enabled = Traits<System>::multithread;
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Alarm> : public Traits<Build>
 {
     static const bool visible = hysterically_debugged;
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Address_Space> : public Traits<Build>
 {
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Segment> : public Traits<Build>
 {
+    static const bool debugged = false;
 };
 
 __END_SYS

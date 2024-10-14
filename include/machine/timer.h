@@ -43,6 +43,11 @@ public:
     static Microsecond period(Hertz frequency) { return Microsecond(1000000) / Microsecond(frequency); }
     static Microsecond time(Tick ticks, Hertz frequency) { return Microsecond(ticks) * period(frequency); }
     static Tick ticks(Microsecond time, Hertz frequency) { return (time + period(frequency) / 2) / period(frequency); }
+
+    static Microsecond sim(Microsecond timef1, Hertz f1, Hertz f2) {
+        Microsecond t = (static_cast<long long>(timef1) * (static_cast<long long>(f1) * 100ULL / static_cast<long long>(f2))) / 100ULL;
+        return t;
+    }
 };
 
 __END_SYS

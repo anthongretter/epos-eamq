@@ -32,7 +32,7 @@ struct Traits<Debug> : public Traits<Build>
     static const bool error = true;
     static const bool warning = true;
     static const bool info = false;
-    static const bool trace = true;
+    static const bool trace = false;
 };
 
 template <>
@@ -70,11 +70,13 @@ struct Traits<Boot> : public Traits<Build>
 template <>
 struct Traits<Setup> : public Traits<Build>
 {
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Init> : public Traits<Build>
 {
+    static const bool debugged = false;
 };
 
 template <>
@@ -153,11 +155,13 @@ struct Traits<Alarm> : public Traits<Build>
 template <>
 struct Traits<Address_Space> : public Traits<Build>
 {
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Segment> : public Traits<Build>
 {
+    static const bool debugged = false;
 };
 
 __END_SYS
