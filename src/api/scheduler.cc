@@ -79,11 +79,14 @@ void RT_Common::handle(Event event) {
     db<Thread>(TRC) << ") => {i=" << _priority << ",p=" << _period << ",d=" << _deadline << ",c=" << _capacity << "}" << endl;
 }
 
+//P3 - Alteração
+volatile unsigned int Variable_Queue_Scheduler::_next_queue;
 
+// The following Scheduling Criteria depend on Alarm, which is not available at scheduler.h
 template <typename ... Tn>
-FCFS::FCFS(int p, Tn & ... an): Priority((p == IDLE) ? IDLE : RT_Common::elapsed()) {}
+FCFS::FCFS(int p, Tn & ... an): Priority((p == IDLE) ? IDLE : Alarm::elapsed()) {}
 
-
+// P3 - Não tem no P3 EDF e LLF
 EDF::EDF(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(elapsed() + ticks(d)), p, d, c) {}
 
 void EDF::handle(Event event) {
@@ -108,6 +111,7 @@ void LLF::handle(Event event) {
 }
 
 // Since the definition of FCFS above is only known to this unit, forcing its instantiation here so it gets emitted in scheduler.o for subsequent linking with other units is necessary.
+// Since the definition above is only known to this unit, forcing its instantiation here so it gets emitted in scheduler.o for subsequent linking with other units is necessary.
 template FCFS::FCFS<>(int p);
 
 
