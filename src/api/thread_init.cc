@@ -17,6 +17,8 @@ void Thread::init()
     if(smp && (CPU::id() == CPU::BSP))
         IC::int_vector(IC::INT_RESCHEDULER, rescheduler);  // if an eoi handler is needed, then it was already installed at IC::init()
 
+    // P3 - espera todos cores para não ativar interrupção de rescheduler antes de BSP configurar interrupção
+    CPU::smp_barrier();
 
     if(smp)
         IC::enable(IC::INT_RESCHEDULER);
@@ -32,6 +34,8 @@ void Thread::init()
 
         new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::MAIN), main);
     }
+    // P3 - outros cores precisa esperar BSP criar thread MAIN antes
+    CPU::smp_barrier();
 
 
     // Idle thread creation does not cause rescheduling (see Thread::constructor_epilogue)

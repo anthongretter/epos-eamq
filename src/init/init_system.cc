@@ -47,6 +47,8 @@ public:
 
         } else {
 
+            // P3 - Espera que BSP inicializa antes para que outros cores inicializar
+            CPU::smp_barrier();
 
             db<Init>(INF) << "Initializing the CPU: " << endl;
             CPU::init();
