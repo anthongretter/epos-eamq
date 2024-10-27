@@ -347,4 +347,87 @@ int EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int lookin
     return rp_waiting_time;
 }
 
+// P3TEST - novo calculo de rank -> precisa alterar rp waiting time ainda tbm 
+static unsigned current_queue[CPU::id()] = 0;
+
+int GEAMQ::rank_eamq() {
+    for (int i = QUEUES - 1; i >= 0; i--) {
+        Thread * t_fitted = nullptr;
+
+        // tempo de execução restante estimado
+        int eet_remaining = _personal_statistics.remaining_et[i];
+        db<EAMQ>(TRC) << "EET restante: " << eet_remaining << endl;
+
+        // calcula round profile waiting time
+        int rp_waiting_time = estimate_rp_waiting_time(eet_remaining, i);
+        db<EAMQ>(TRC) << "RP waiting time: " << rp_waiting_time << endl;
+
+        // Não avaliamos a possibilidade de inserir threads na frente de outras recém inseridas para evitarmos um possível loop infinito
+        for (auto it = Thread::scheduler()->end(i); it != Thread::scheduler()->begin(i) && !it->object()->criterion().is_recent_insertion(); it = it->prev()) {
+            Thread * thread_in_queue = it->object();
+            // As ultimas threads da fila tendem a ser aperiodicas, então nós não queremos recalcular o rank delas
+            if (!thread_in_queue->criterion().periodic()) { 
+                //db<EAMQ>(TRC) << "Pulando uma thread aperiodica" << endl;
+                continue;
+            }
+
+            // Thread da frente -> Tf
+            // Thread que será inserido -> Ti
+            int thread_capacity_remaining = thread_in_queue->criterion().personal_statistics().remaining_et[i];
+            int total_time_execution = thread_in_queue->priority()               // tempo de espera da (Tf)
+                                       + (thread_capacity_remaining * 115 / 100) // tempo de execução da (Tf)
+                                       + eet_remaining                           // tempo de execução (Ti)
+                                       + rp_waiting_time;                        // tempo de espera por RP (Ti)
+
+            if (total_time_execution < int(Time_Base(_personal_statistics.remaining_deadline))) {
+                t_fitted = thread_in_queue;
+                // vai inserir na frente de alguem, entao salvar onde
+                _behind_of = t_fitted;
+                break;
+            }
+        }
+
+        // Se não encontrou nenhuma fila (não vazia) que cabe a thread (e tem threads periodicas) avalie a próxima
+        if (!t_fitted && !Thread::scheduler()->empty(i) && Thread::scheduler()->head(i)->object()->criterion().periodic()) {
+            continue;
+        }
+
+        // forma de accesar a cabeça e checar se é periodica
+        // Thread::scheduler()->head(i)->object()->criterion().periodic()
+
+        // Se a fila estiver vazia t_fitted = NULL
+        int t_fitted_capacity_remaining = 0;
+        int t_chosen_capacity = 0;
+
+        /////////////////////// P3TEST - Se tem thread ja sendo executado por Cores nessa fila ///////////////////////
+        if (!Thread::scheduler()->empty(i) && Thread::scheduler()->has_chosen(i) > 0) {
+            // aqui ainda nao tenho certeza, se pega tempo de execução menor (?) que tiver dos chosen
+            // ou simplesmente seria tamanho do QUANTUM ? 
+            int t_chosen_capacity = ?;
+        }
+
+        // Se a fila não estiver vazia precisamos levar em consideração o tempo que a thread da frente esperará
+        if (!Thread::scheduler()->empty(i) && Thread::scheduler()->head(i)->object()->criterion().periodic()) {
+            db<EAMQ>(TRC) << "Fila não vazia e achou fila inserir!" << endl;
+            t_fitted_capacity_remaining = t_fitted->criterion().personal_statistics().remaining_et[i];
+        }
+
+        ///////////////// P3TEST - soma aqui o t_chosen_capacity /////////////////
+        int cwt_profile = rp_waiting_time + (t_fitted ? t_fitted->priority() + t_fitted_capacity_remaining : 0);
+        int available_time_to_run = _personal_statistics.remaining_deadline - cwt_profile;
+        int idle_time = available_time_to_run - eet_remaining;
+        db<EAMQ>(TRC) << "CWT: " << cwt_profile << ", Time to run: " << available_time_to_run << ", IDLE time: " << idle_time << endl;
+
+        if (idle_time >= 0) {
+            set_queue(i);
+            _priority = cwt_profile;
+            db<EAMQ>(TRC) << "Thread inserted in queue " << i << " with priority " << cwt_profile << endl;
+            return 1;
+        }
+    }
+    // Não encontrou lugar na fila
+    db<EAMQ>(TRC) << "Thread not inserted in any queue" << endl;
+    return 0;
+}
+
 __END_SYS

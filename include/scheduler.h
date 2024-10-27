@@ -427,9 +427,27 @@ private:
     int estimate_rp_waiting_time(unsigned int eet_profile, unsigned int looking_queue);
 };
 
+// P3TEST - Multicore Global Scheduling 
+class GEAMQ : public EAMQ
+{
+public:
+    static const unsigned HEAD = Traits<Machine>::CPUS;
+    static unsigned current_queue[HEAD];
+
+public:
+    int rank_eamq();
+    static void next_queue() { _current_queue = ++current_queue[CPU::id()] %= QUEUES; };
+    static const volatile unsigned int &current_queue() { return _current_queue[CPU::id()]; };
+    static unsigned int current_head() { return CPU::id(); }
+}
+
 __END_SYS
 
 __BEGIN_UTIL
+
+// P3TEST - usando multihead multilist
+template <typename T>
+class Scheduling_Queue<T, GEAMQ> : public Multihead_Scheduling_Multilist<T>{};
 
 template <typename T>
 class Scheduling_Queue<T, EAMQ> : public Scheduling_Multilist_Single_Chosen<T>{};

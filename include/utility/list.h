@@ -1620,6 +1620,18 @@ template <typename T,
           unsigned int H = R::HEADS>
 class Multihead_Scheduling_Multilist : public Scheduling_Multilist<T, R, El, Multihead_Scheduling_List<T, R, El, H>, Q>
 {
+    // Verifica quantos Cores tem chosen naquela fila
+    int unsigned has_chosen(unsigned int queue) 
+    {
+        int unsigned count = 0;
+        for (unsigned int i = 0; i < H; i++) {
+            // Se tem algum Core com chosen naquela fila
+            if (_list[queue].chosen(i)) {
+                count ++;
+            }
+        }
+        count;
+    }
 };
 
 // Doubly-Linked, Grouping List
