@@ -394,10 +394,11 @@ public:
     void is_recent_insertion(bool b) { _is_recent_insertion = b; }
 
     int rank_eamq();
-    const volatile unsigned int &queue() const volatile { return _queue; }; // returns the Thread's queue
+    const volatile unsigned int &queue() const volatile { return _queue; } // returns the Thread's queue
 
-    static const volatile unsigned int &current_queue() { return _current_queue; }; // current global queue
-    static void next_queue() { ++_current_queue %= QUEUES; }        // points to next global queue with threads
+    static const volatile unsigned int &current_queue() { db<Thread>(WRN) << "PROBLEMAAAA: " << endl; return _current_queue;} // current global queue
+    virtual void next_queue() { ++_current_queue %= QUEUES;  db<Thread>(WRN) << "PROBLEMAAAA: " << endl;}        // points to next global queue with threads
+    int estimate_rp_waiting_time(unsigned int eet_profile, unsigned int looking_queue);
 
 protected:
     void set_queue(unsigned int q) { _queue = q; };
@@ -421,25 +422,37 @@ protected:
     Personal_Statistics _personal_statistics;
     Thread *_behind_of;
 
-    static volatile unsigned _current_queue;
-
-private:
-    int estimate_rp_waiting_time(unsigned int eet_profile, unsigned int looking_queue);
+    static volatile unsigned int _current_queue; 
 };
 
 // P3TEST - Multicore Global Scheduling 
 class GEAMQ : public EAMQ
 {
 public:
-    static const unsigned HEAD = Traits<Machine>::CPUS;
-    static unsigned current_queue[HEAD];
+    static const unsigned HEADS = Traits<Machine>::CPUS;
+
+    GEAMQ(int p = APERIODIC): EAMQ(p) {}
+    GEAMQ(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN): EAMQ(d, p, c) {}
+    
+    using EAMQ::queue;
+    // static volatile unsigned current_queue[HEADS];
+protected:
+    static volatile unsigned int _current_queue[HEADS];
 
 public:
     int rank_eamq();
-    static void next_queue() { _current_queue = ++current_queue[CPU::id()] %= QUEUES; };
-    static const volatile unsigned int &current_queue() { return _current_queue[CPU::id()]; };
+    void handle(Event event);
+    void next_queue() override { 
+        _current_queue[CPU::id()] = (_current_queue[CPU::id()] + 1) % QUEUES;
+        //db<Thread>(WRN) << "core: " << CPU::id() << " current queue: "  << _current_queue[CPU::id()] << endl;
+    }
+    static const volatile unsigned int &current_queue() {
+        //db<Thread>(WRN) << "_current_queue[CPU::id()]:  " << _current_queue[CPU::id()] << endl; 
+        return _current_queue[CPU::id()]; }
     static unsigned int current_head() { return CPU::id(); }
-}
+
+
+};
 
 __END_SYS
 

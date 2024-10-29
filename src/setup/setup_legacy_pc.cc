@@ -190,7 +190,7 @@ Setup::Setup(char * boot_image)
     }
 
     // P3 - Garantir que todos CPUs tenham inicializado paginação 
-    CPU::smp_barrier(si->bm.n_cpu);
+    CPU::smp_barrier(si->bm.n_cpus);
 
     db<Setup>(INF) << "Setup::pc=" << CPU::pc() << endl;
     db<Setup>(INF) << "Setup::sp=" << CPU::sp() << endl;

@@ -26,27 +26,31 @@ void Thread::constructor_prologue(unsigned int stack_size)
 
 void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 {
-    db<Thread>(TRC) << "Thread(entry=" << entry
+    db<Thread>(WRN) << "Thread(entry=" << entry
                     << ",state=" << _state
                     << ",priority=" << _link.rank()
                     << ",queue=" << _link.rank().queue()
                     << ",stack={b=" << reinterpret_cast<void *>(_stack)
                     << ",s=" << stack_size
                     << "},context={b=" << _context
-                    << "," << *_context << "}) => " << this << "@" << _link.rank().queue() << endl;
+                    << "," << *_context << "}) => " << &_link << "@" << _link.rank().queue() << endl;
 
     assert((_state != WAITING) && (_state != FINISHING)); // invalid states
 
     if (_link.rank() != IDLE)
         _task->enroll(this);
 
-    if ((_state != READY) && (_state != RUNNING))
+    if ((_state != READY) && (_state != RUNNING)) {
+        db<Thread>(WRN) << "Thread not ready!" << endl;
         _scheduler.suspend(this);
+    }
 
     criterion().handle(Criterion::CREATE);
 
-    if(preemptive && (_state == READY) && (_link.rank() != IDLE))
+    if(preemptive && (_state == READY) && (_link.rank() != IDLE)) {
+        db<Thread>(WRN) << "Thread ready!" << endl;
         reschedule(_link.rank().queue());
+    }
 
     unlock();
 }
@@ -135,7 +139,7 @@ int Thread::join()
 {
     lock();
 
-    db<Thread>(TRC) << "Thread::join(this=" << this << ",state=" << _state << ")" << endl;
+    db<Thread>(WRN) << "Thread::join(this=" << this << ",state=" << _state << ")" << endl;
     // Precondition: no Thread::self()->join()
     assert(running() != this);
 
@@ -151,6 +155,8 @@ int Thread::join()
         _scheduler.suspend(prev); // implicitly choose() if suspending chosen()
         prev->criterion().handle(EAMQ::CHANGE_QUEUE);
         Thread *next = _scheduler.chosen();
+
+        db<Thread>(WRN) << "PROXIMO THREAD: " << next->link() << endl;
 
         dispatch(prev, next);
     }
@@ -333,10 +339,11 @@ void Thread::reschedule()
     assert(locked()); // locking handled by caller
 
     Thread *prev = running();
+    //db<Thread>(WRN) << "Thread PREV: " << prev->link() << endl;
     // Atualiza current_queue para proxima fila (next tem que ser thread da proxima fila)
     prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread *next = _scheduler.choose();
-
+    //db<Thread>(WRN) << "Thread NEXT: " << next->link() << endl;
     dispatch(prev, next);
 }
 

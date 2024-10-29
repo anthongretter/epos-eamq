@@ -411,7 +411,12 @@ public:
 
     template<typename T>
     static T cas(volatile T & value, T compare, T replacement) {
-        ASM("lock cmpxchgl %2, %3\n" : "=a"(compare) : "a"(compare), "r"(replacement), "m"(value) : "memory");
+        asm volatile (
+            "lock cmpxchgl %2, %1"
+            : "=A"(compare), "+m"(value)
+            : "r"(replacement), "0"(compare)
+            : "memory"
+        );
         return compare;
     }
 

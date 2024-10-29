@@ -85,41 +85,15 @@ volatile unsigned int Variable_Queue_Scheduler::_next_queue;
 // The following Scheduling Criteria depend on Alarm, which is not available at scheduler.h
 template <typename ... Tn>
 FCFS::FCFS(int p, Tn & ... an): Priority((p == IDLE) ? IDLE : Alarm::elapsed()) {}
-
-// P3 - Não tem no P3 EDF e LLF
-// EDF::EDF(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(elapsed() + ticks(d)), p, d, c) {}
-
-// void EDF::handle(Event event) {
-//     RT_Common::handle(event);
-
-//     // Update the priority of the thread at job releases, before _alarm->v(), so it enters the queue in the right order (called from Periodic_Thread::Xxx_Handler)
-//     if(periodic() && (event & JOB_RELEASE))
-//         _priority = elapsed() + _deadline;
-// }
-
-
-// LLF::LLF(Microsecond p, Microsecond d, Microsecond c): RT_Common(int(elapsed() + ticks((d ? d : p) - c)), p, d, c) {}
-
-// void LLF::handle(Event event) {
-//     if(periodic() && ((event & UPDATE) | (event & JOB_RELEASE) | (event & JOB_FINISH))) {
-//         _priority = elapsed() + _deadline - _capacity + _statistics.job_utilization;
-//     }
-//     RT_Common::handle(event);
-
-//     // Update the priority of the thread at job releases, before _alarm->v(), so it enters the queue in the right order (called from Periodic_Thread::Xxx_Handler)
-//     //    if((_priority >= PERIODIC) && (_priority < APERIODIC) && ((event & JOB_FINISH) || (event & UPDATE_ALL)))
-// }
-
-// Since the definition of FCFS above is only known to this unit, forcing its instantiation here so it gets emitted in scheduler.o for subsequent linking with other units is necessary.
-// Since the definition above is only known to this unit, forcing its instantiation here so it gets emitted in scheduler.o for subsequent linking with other units is necessary.
 template FCFS::FCFS<>(int p);
 
-
+/////////////////////////////// P2 - Single core /////////////////////////////// 
 volatile unsigned EAMQ::_current_queue = QUEUES - 1;
 
 // Construtor para threads aperiódicas
-EAMQ::EAMQ(int p) : RT_Common(p)
+EAMQ::EAMQ(int p) : RT_Common(p), _is_recent_insertion(false), _personal_statistics{}, _behind_of(nullptr)
 {
+
     // Coloca thread MAIN e IDLE na mesma fila (fila com menor frequência possível)
     // prioridade igual a LOW ou mais baixos
     if (p == MAIN || p == IDLE || p >= LOW) {
@@ -131,8 +105,9 @@ EAMQ::EAMQ(int p) : RT_Common(p)
 }
 
 // -1 passado para RT_Common pois logo em seguida ele é atualizado
-EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c) : RT_Common(-1, p, d, c)
+EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c) : RT_Common(-1, p, d, c), _is_recent_insertion(false), _personal_statistics{}, _behind_of(nullptr)
 {
+
     db<EAMQ>(TRC) << "ranking with p: " << p << endl;
     d = (d ? d : p);
 
@@ -154,30 +129,31 @@ void EAMQ::handle(Event event) {
     // Antes de toda troca de threads (choose / chosen) precisa-se avancar 
     // o ponteiro da fila de escolha 
     if (event & CHANGE_QUEUE) {
-        unsigned int last = _current_queue;
-
+        unsigned int last = current_queue();
+        db<Thread>(WRN) << "CPU " << CPU::id() << " Last Queue: " << last << endl;
         do {
             // Pula para próxima fila
             EAMQ::next_queue();
         // Enquanto fila atual não vazia ou uma volta completa
-        } while (Thread::scheduler()->empty(_current_queue) && _current_queue != last);
+        } while (Thread::scheduler()->empty(current_queue()) && (current_queue() != last));
 
         // Ajustando a frequência conforme a fila
-        Hertz f = frequency_within(_current_queue);
+        Hertz f = frequency_within(current_queue());
         CPU::clock(f);
         
         // So that IDLE doesnt spam this
-        if (last != _current_queue) {
-            db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << _current_queue << endl;
+        if (last != current_queue()) {
+            db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue() << endl;
         }
     }
     if (event & CREATE) {
         for (int q = 0; q < QUEUES; q++) {
-            db<EAMQ>(TRC) << "Fila " << q << ": ";
+            db<EAMQ>(WRN) << "CPU " << CPU::id() << " Fila " << q << ": ";
             for (auto it = Thread::scheduler()->end(q); &(*it) != nullptr; it = it->prev()) {
-                db<EAMQ>(TRC) << it << " ";
+                db<EAMQ>(WRN) << it << " ";
             }
-        db<EAMQ>(TRC) << endl;
+            db<EAMQ>(WRN) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q);
+        db<EAMQ>(WRN) << endl;
         }
     }
     if (event & UPDATE) {
@@ -231,6 +207,16 @@ void EAMQ::handle(Event event) {
     }
     // Quando uma thread periodica termina tarefa
     if (periodic() && (event & JOB_FINISH)) {
+        for (auto it = Thread::scheduler()->begin(current_queue()); it != Thread::scheduler()->end(current_queue()); ++it) {
+            unsigned new_rank = it->rank() - (_personal_statistics.average_et[it->object()->criterion().current_queue()] + Thread::scheduler()->chosen()->priority());
+            it->rank(new_rank);
+        }
+        if ( Thread::scheduler()->end(current_queue())) {
+            unsigned new_rank = Thread::scheduler()->end(current_queue())->rank() + (_personal_statistics.average_et[Thread::scheduler()->end(current_queue())->object()->criterion().current_queue()] + Thread::scheduler()->chosen()->priority());
+            Thread::scheduler()->end(current_queue())->rank(new_rank);
+        }
+
+        
         for (unsigned int q = 0; q < QUEUES; q++)
         {
             // (tempo de execução anterior + tempo de execução atual) / 2
@@ -260,6 +246,7 @@ void EAMQ::handle(Event event) {
 }
 
 int EAMQ::rank_eamq() {
+    // Baseado em Choosen não saindo da fila
 
     for (int i = QUEUES - 1; i >= 0; i--) {
         Thread * t_fitted = nullptr;
@@ -347,8 +334,133 @@ int EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int lookin
     return rp_waiting_time;
 }
 
+/////////////////////////////// P3 - Multicore Global Scheduling /////////////////////////////// 
 // P3TEST - novo calculo de rank -> precisa alterar rp waiting time ainda tbm 
-static unsigned current_queue[CPU::id()] = 0;
+// Verificar se todos os cores irão setar para QUEUE - 1
+volatile unsigned int GEAMQ::_current_queue[GEAMQ::HEADS] = {QUEUES - 1};
+
+void GEAMQ::handle(Event event) {
+    // Antes de toda troca de threads (choose / chosen) precisa-se avancar 
+    // o ponteiro da fila de escolha 
+    if (event & CHANGE_QUEUE) {
+        unsigned int last = current_queue();
+        // db<Thread>(WRN) << "CPU " << CPU::id() << " Last Queue: " << last << endl;
+        do {
+            // Pula para próxima fila
+            GEAMQ::next_queue();
+        // Enquanto fila atual não vazia ou uma volta completa
+        // ACHO que da certo apenas com chosen() 
+        } while (Thread::scheduler()->empty(current_queue()) && !(Thread::scheduler()->chosen()) && (current_queue() != last));
+
+        //db<Thread>(WRN) << "Current_queue ATUAL: " << current_queue() << endl;
+
+        // Ajustando a frequência conforme a fila
+        Hertz f = frequency_within(current_queue());
+        CPU::clock(f);
+        
+        // So that IDLE doesnt spam this
+        if (last != current_queue()) {
+            db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue() << endl;
+        }
+    }
+    if (event & CREATE) {
+        for (int q = 0; q < QUEUES; q++) {
+            db<EAMQ>(WRN) << "CPU " << CPU::id() << " Fila " << q << ": ";
+            for (auto it = Thread::scheduler()->end(q); &(*it) != nullptr; it = it->prev()) {
+                db<EAMQ>(WRN) << it << " ";
+            }
+            db<EAMQ>(WRN) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q);
+        db<EAMQ>(WRN) << endl;
+        }
+    }
+    if (event & UPDATE) {
+        // Depois da proxima ser definida e avisada de sua entrada, podemos desproteger as recem entradas
+        // Todas as threads recebem um evento UPDATE
+        _is_recent_insertion = false;
+        _behind_of = nullptr;
+    }
+    // Quando acontece prempcao do quantum
+    if (periodic() && (event & UPDATE)) {
+        if (Q > Time_Base(_personal_statistics.remaining_deadline)) {
+            // underflow
+            _personal_statistics.remaining_deadline = Microsecond(0);
+            // somehow discard this thread
+        } else {
+            // Decrementa do deadline o quantum executado
+            _personal_statistics.remaining_deadline -= Microsecond(Q);
+        }
+    }
+    if (periodic() && (event & CREATE)) {
+        // Se foi inserido no meio da fila (ou seja, se tem t_fitted)
+        if (_behind_of) {
+            // Faz atualização de rank da thread que foi inserida chamando assure_behind
+            _behind_of->link()->prev()->object()->for_all_behind(ASSURE_BEHIND);
+        }
+    }
+    if (periodic() && (event & LEAVE)) {
+        // Guarda o tempo que passou depois que começou a execução da tarefa
+        Microsecond in_cpu = time(elapsed() - _personal_statistics.job_enter_tick);
+        _personal_statistics.job_execution_time += in_cpu;
+        for (unsigned int q = 0; q < QUEUES; q++)
+        {
+            // Reduz o tempo executado deste quantum, transformando Tick em Microsecond
+            Microsecond executed_in_profile = Timer_Common::sim(in_cpu, frequency_within(_queue), frequency_within(q));
+            if (executed_in_profile > _personal_statistics.remaining_et[q]) {
+                // underflow
+                _personal_statistics.remaining_et[q] = 0;
+            } else {
+                _personal_statistics.remaining_et[q] -= executed_in_profile;
+            }
+        }
+    }
+    // Quando uma thread periodica começa a tarefa
+    if (periodic() && (event & ENTER)) {
+        _personal_statistics.job_enter_tick = elapsed();
+    }
+    // Quando uma thread foi liberado para executar tarefa
+    if (periodic() && (event & JOB_RELEASE)) {
+        _personal_statistics.job_execution_time = 0;
+        rank_eamq();
+    }
+    // Quando uma thread periodica termina tarefa
+    if (periodic() && (event & JOB_FINISH)) {
+        for (auto it = Thread::scheduler()->begin(current_queue()); it != Thread::scheduler()->end(current_queue()); ++it) {
+            unsigned new_rank = it->rank() - (_personal_statistics.average_et[it->object()->criterion().current_queue()] + Thread::scheduler()->chosen()->priority());
+            it->rank(new_rank);
+        }
+        if ( Thread::scheduler()->end(current_queue())) {
+            unsigned new_rank = Thread::scheduler()->end(current_queue())->rank() + (_personal_statistics.average_et[Thread::scheduler()->end(current_queue())->object()->criterion().current_queue()] + Thread::scheduler()->chosen()->priority());
+            Thread::scheduler()->end(current_queue())->rank(new_rank);
+        }
+
+        
+        for (unsigned int q = 0; q < QUEUES; q++)
+        {
+            // (tempo de execução anterior + tempo de execução atual) / 2
+            _personal_statistics.average_et[q] = (_personal_statistics.average_et[q] + _personal_statistics.job_execution_time) / 2;
+            // Atualiza EET da tarefa para cada fila (relativo a frequência)
+            _personal_statistics.job_estimated_et[q] = Timer_Common::sim(_personal_statistics.average_et[q], frequency_within(_queue), frequency_within(q));
+            // Timer_Common::time(_personal_statistics.average_et[q], frequency_within(q));
+        }
+        _personal_statistics.job_execution_time = 0;
+    }
+    if (periodic() && (event & ASSURE_BEHIND)) {
+        db<EAMQ>(TRC) << "p: " << _priority << " visited for rerank (someone in front was inserted)" << endl;
+    }
+    if (periodic() && (event & RESUME_THREAD)) {
+        rank_eamq(); // atualiza o rank
+        if (_behind_of) {
+            // Faz atualização de rank da thread que foi inserida chamando assure_behind
+            _behind_of->link()->prev()->object()->for_all_behind(ASSURE_BEHIND);
+        }
+    }
+
+    /* a = new Job()        -> JOB_RELEASE, CREATE
+     * [b] premptado por [a] -> ENTER (a), LEAVE (b)
+     * a acabou tarefa :(    -> JOB_FINISH
+     * a tem nova tarefa >:) -> JOB_RELEASE
+     */
+}
 
 int GEAMQ::rank_eamq() {
     for (int i = QUEUES - 1; i >= 0; i--) {
@@ -387,6 +499,7 @@ int GEAMQ::rank_eamq() {
             }
         }
 
+        // Não permitimos inserir threads na primeira posição da fila se alguma já tiver sido inserida
         // Se não encontrou nenhuma fila (não vazia) que cabe a thread (e tem threads periodicas) avalie a próxima
         if (!t_fitted && !Thread::scheduler()->empty(i) && Thread::scheduler()->head(i)->object()->criterion().periodic()) {
             continue;
@@ -397,17 +510,15 @@ int GEAMQ::rank_eamq() {
 
         // Se a fila estiver vazia t_fitted = NULL
         int t_fitted_capacity_remaining = 0;
-        int t_chosen_capacity = 0;
 
         /////////////////////// P3TEST - Se tem thread ja sendo executado por Cores nessa fila ///////////////////////
-        if (!Thread::scheduler()->empty(i) && Thread::scheduler()->has_chosen(i) > 0) {
-            // aqui ainda nao tenho certeza, se pega tempo de execução menor (?) que tiver dos chosen
-            // ou simplesmente seria tamanho do QUANTUM ? 
-            int t_chosen_capacity = ?;
+        if (Thread::scheduler()->empty(i) && (Thread::scheduler()->chosen_now(i))) {
+            t_fitted = Thread::scheduler()->chosen_now(i)->object();
         }
 
         // Se a fila não estiver vazia precisamos levar em consideração o tempo que a thread da frente esperará
-        if (!Thread::scheduler()->empty(i) && Thread::scheduler()->head(i)->object()->criterion().periodic()) {
+        // if (!Thread::scheduler()->empty(i) && Thread::scheduler()->head(i)->object()->criterion().periodic() ) {
+        if (t_fitted && Thread::scheduler()->head(i)->object()->criterion().periodic()) {
             db<EAMQ>(TRC) << "Fila não vazia e achou fila inserir!" << endl;
             t_fitted_capacity_remaining = t_fitted->criterion().personal_statistics().remaining_et[i];
         }

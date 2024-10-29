@@ -38,13 +38,13 @@ struct Traits<Debug> : public Traits<Build>
 template <>
 struct Traits<EAMQ> : public Traits<Build>
 {
-    static const bool debugged = false;
+    static const bool debugged = true;
 };
 
 template <>
 struct Traits<Lists> : public Traits<Build>
 {
-    static const bool debugged = false;
+    static const bool debugged = true;
 };
 
 template <>
@@ -141,7 +141,7 @@ struct Traits<Thread> : public Traits<Build>
     static const int priority_inversion_protocol = NONE;
 
 
-    typedef IF<(CPUS > 1), EAMQ, Priority>::Result Criterion;
+    typedef IF<(CPUS > 1), GEAMQ, GEAMQ>::Result Criterion;
     static const unsigned int QUANTUM = 10000; // us
 
     static const bool debugged = false;

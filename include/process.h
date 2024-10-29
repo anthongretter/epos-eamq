@@ -25,6 +25,7 @@ class Thread
     friend class Alarm;                 // for lock()
     friend class System;                // for init()
     friend class EAMQ;                  // for handle()
+    friend class GEAMQ;                 // for handle()
     friend class IC;                            // for link() for priority ceiling
     friend volatile unsigned long ::_running(); // for running()
 
