@@ -26,14 +26,14 @@ void Thread::constructor_prologue(unsigned int stack_size)
 
 void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 {
-    db<Thread>(TRC) << "Thread(entry=" << entry
+    db<GEAMQ>(TRC) << "Thread(entry=" << entry
                     << ",state=" << _state
                     << ",priority=" << _link.rank()
                     << ",queue=" << _link.rank().queue()
                     << ",stack={b=" << reinterpret_cast<void *>(_stack)
                     << ",s=" << stack_size
                     << "},context={b=" << _context
-                    << "," << *_context << "}) => " << &_link << "@" << _link.rank().queue() << endl;
+                    << "," << *_context << "}) => " << _link.object() << "@" << _link.rank().queue() << endl;
 
     assert((_state != WAITING) && (_state != FINISHING)); // invalid states
 
@@ -207,24 +207,24 @@ void Thread::resume()
 {
     lock();
 
-    db<GEAMQ>(WRN) << "Thread::resume(this=" << this << ") state= " << _state << endl;
+    db<GEAMQ>(TRC) << "Thread::resume(this=" << this << ") state= " << _state << endl;
 
     if (_state == SUSPENDED)
     {
         _state = READY;
         // Recalcular rank antes de voltar 
-        db<GEAMQ>(WRN) << "Calling handle" << endl;
+        db<GEAMQ>(TRC) << "Calling handle" << endl;
         this->criterion().handle(EAMQ::RESUME_THREAD);
 
-        db<GEAMQ>(WRN) << "Calling resume" << endl;
+        db<GEAMQ>(TRC) << "Calling resume" << endl;
         _scheduler.resume(this);
 
         if(preemptive) {
-            db<GEAMQ>(WRN) << "Calling reschedule" << endl;
+            db<GEAMQ>(TRC) << "Calling reschedule" << endl;
             reschedule(_link.rank().queue());
         }
     } else
-        db<GEAMQ>(WRN) << "Resume called for unsuspended object!" << endl;
+        db<GEAMQ>(TRC) << "Resume called for unsuspended object!" << endl;
 
     unlock();
 }

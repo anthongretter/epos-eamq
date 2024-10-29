@@ -398,9 +398,8 @@ public:
 
     static const volatile unsigned int &current_queue() { db<Thread>(WRN) << "PROBLEMAAAA: " << endl; return _current_queue;} // current global queue
     virtual void next_queue() { ++_current_queue %= QUEUES;  db<Thread>(WRN) << "PROBLEMAAAA: " << endl;}        // points to next global queue with threads
-    int estimate_rp_waiting_time(unsigned int eet_profile, unsigned int looking_queue);
 
-protected:
+protected:    
     void set_queue(unsigned int q) { _queue = q; };
 
     /* Em caso de 4 filas em relacao a frequencia maxima:
@@ -414,6 +413,16 @@ protected:
         Hertz f = CPU::max_clock() - (((CPU::max_clock() / 1000) * 125) * queue);
         return f;
     };
+
+    /* Procura pela melhor thread na subfila q (posicao a colocar), 
+     * onde o slack seja o menor possivel
+     */
+    Thread * search_t_fitted(unsigned int q);
+
+    /* Estima o tempo de espera (em numeros de quantums) que
+     * levaria ate o _current_queue chegar em q
+     */
+    int estimate_rp_waiting_time(unsigned int q);
 
 
 protected:
@@ -433,7 +442,7 @@ public:
 
     // initialize_current_queue pois a main que é a primeira a rodar é aperiodica
     GEAMQ(int p = APERIODIC): EAMQ(p) {initialize_current_queue();}
-    GEAMQ(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN): EAMQ(p, d, c) {}
+    GEAMQ(const Microsecond p, const Microsecond d = SAME, const Microsecond c = UNKNOWN): EAMQ(p, d, c) {}
     
     using EAMQ::queue;
     // static volatile unsigned current_queue[HEADS];

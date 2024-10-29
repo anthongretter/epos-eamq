@@ -44,7 +44,7 @@ int main()
         // Thread periodic
         auto conf = Periodic_Thread::Configuration(
             500000,        // periodo
-            12000,          // deadline
+            120000,          // deadline
             Periodic_Thread::UNKNOWN,
             Periodic_Thread::NOW,
             2
