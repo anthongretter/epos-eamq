@@ -28,7 +28,7 @@ public:
         // It will return MAIN for CPU0 and IDLE for the others
         Thread * first = Thread::self();
 
-        db<Init, Thread>(INF) << "Dispatching the first thread: " << first << endl;
+        // db<Init, Thread>(INF) << "Dispatching the first thread: " << first << endl;
 
         // This barrier is particularly important, since afterwards the temporary stacks
         // and data structures established by SETUP and announced as "free memory" will indeed be

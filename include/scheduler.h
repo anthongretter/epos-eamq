@@ -431,13 +431,26 @@ class GEAMQ : public EAMQ
 public:
     static const unsigned HEADS = Traits<Machine>::CPUS;
 
-    GEAMQ(int p = APERIODIC): EAMQ(p) {}
-    GEAMQ(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN): EAMQ(d, p, c) {}
+    // initialize_current_queue pois a main que é a primeira a rodar é aperiodica
+    GEAMQ(int p = APERIODIC): EAMQ(p) {initialize_current_queue();}
+    GEAMQ(const Microsecond & d, const Microsecond & p = SAME, const Microsecond & c = UNKNOWN): EAMQ(p, d, c) {}
     
     using EAMQ::queue;
     // static volatile unsigned current_queue[HEADS];
+    
 protected:
     static volatile unsigned int _current_queue[HEADS];
+
+    static void initialize_current_queue() {
+        if (!initialized) {
+            for (volatile unsigned int &q : _current_queue) {
+                q = QUEUES - 1;
+            }
+            initialized = true;
+        }
+    }
+    
+    static bool initialized;
 
 public:
     int rank_eamq();

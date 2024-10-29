@@ -89,6 +89,8 @@ template FCFS::FCFS<>(int p);
 
 /////////////////////////////// P2 - Single core /////////////////////////////// 
 volatile unsigned EAMQ::_current_queue = QUEUES - 1;
+volatile unsigned int GEAMQ::_current_queue[GEAMQ::HEADS] = {QUEUES - 1}; // apenas inicializa o core 0
+bool GEAMQ::initialized = false; // workaround para fazer uma lazy initialization no _current_queue
 
 // Construtor para threads aperiódicas
 EAMQ::EAMQ(int p) : RT_Common(p), _is_recent_insertion(false), _personal_statistics{}, _behind_of(nullptr)
@@ -102,10 +104,11 @@ EAMQ::EAMQ(int p) : RT_Common(p), _is_recent_insertion(false), _personal_statist
         // Se a prioridade é NORMAL ou HIGH (p < LOW)
         _queue = QUEUES - 2;
     }
+    
 }
 
-// -1 passado para RT_Common pois logo em seguida ele é atualizado
-EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c) : RT_Common(-1, p, d, c), _is_recent_insertion(false), _personal_statistics{}, _behind_of(nullptr)
+// PERIODIC passado para RT_Common pois logo em seguida ele é atualizado
+EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c) : RT_Common(PERIODIC, p, d, c), _is_recent_insertion(false), _personal_statistics{}, _behind_of(nullptr)
 {
 
     db<EAMQ>(TRC) << "ranking with p: " << p << endl;
@@ -337,7 +340,7 @@ int EAMQ::estimate_rp_waiting_time(unsigned int eet_profile, unsigned int lookin
 /////////////////////////////// P3 - Multicore Global Scheduling /////////////////////////////// 
 // P3TEST - novo calculo de rank -> precisa alterar rp waiting time ainda tbm 
 // Verificar se todos os cores irão setar para QUEUE - 1
-volatile unsigned int GEAMQ::_current_queue[GEAMQ::HEADS] = {QUEUES - 1};
+// volatile unsigned int GEAMQ::_current_queue[GEAMQ::HEADS] = {QUEUES - 1};
 
 void GEAMQ::handle(Event event) {
     // Antes de toda troca de threads (choose / chosen) precisa-se avancar 
@@ -348,6 +351,7 @@ void GEAMQ::handle(Event event) {
         do {
             // Pula para próxima fila
             GEAMQ::next_queue();
+            db<Lists>(WRN) << "next_queue chamado, levou para: " << current_queue() << endl;
         // Enquanto fila atual não vazia ou uma volta completa
         // ACHO que da certo apenas com chosen() 
         } while (Thread::scheduler()->empty(current_queue()) && !(Thread::scheduler()->chosen()) && (current_queue() != last));
@@ -364,14 +368,19 @@ void GEAMQ::handle(Event event) {
         }
     }
     if (event & CREATE) {
+        // // db<Lists>(WRN) << "CRIANDO THREAD" << endl;
+        unsigned int count = 5;
         for (int q = 0; q < QUEUES; q++) {
-            db<EAMQ>(WRN) << "CPU " << CPU::id() << " Fila " << q << ": ";
-            for (auto it = Thread::scheduler()->end(q); &(*it) != nullptr; it = it->prev()) {
-                db<EAMQ>(WRN) << it << " ";
+            db<Lists>(WRN) << "CPU " << CPU::id() << " Fila " << q << " Tamanho  " <<  Thread::scheduler()->size(q) << " ";
+            for (Thread* t = Thread::scheduler()->tail(q)->object(); t != nullptr; t = t->link()->prev()->object()) {
+                if (count == 0) {break;} 
+                db<Lists>(WRN) << t << " ";
+                count--;
             }
-            db<EAMQ>(WRN) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q);
-        db<EAMQ>(WRN) << endl;
+            db<Lists>(WRN) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q)->object();
+        db<Lists>(WRN) << endl;
         }
+        db<Lists>(WRN) << endl;
     }
     if (event & UPDATE) {
         // Depois da proxima ser definida e avisada de sua entrada, podemos desproteger as recem entradas
@@ -447,7 +456,12 @@ void GEAMQ::handle(Event event) {
     if (periodic() && (event & ASSURE_BEHIND)) {
         db<EAMQ>(TRC) << "p: " << _priority << " visited for rerank (someone in front was inserted)" << endl;
     }
+    if (event & RESUME_THREAD) {
+        db<GEAMQ>(WRN) << "RESUME_THREAD called, checking periodic..." << endl;
+    }
     if (periodic() && (event & RESUME_THREAD)) {
+        db<GEAMQ>(WRN) << "RESUME_THREAD called, is periodic" << endl;
+
         rank_eamq(); // atualiza o rank
         if (_behind_of) {
             // Faz atualização de rank da thread que foi inserida chamando assure_behind

@@ -26,7 +26,7 @@ void Thread::constructor_prologue(unsigned int stack_size)
 
 void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 {
-    db<Thread>(WRN) << "Thread(entry=" << entry
+    db<Thread>(TRC) << "Thread(entry=" << entry
                     << ",state=" << _state
                     << ",priority=" << _link.rank()
                     << ",queue=" << _link.rank().queue()
@@ -207,19 +207,24 @@ void Thread::resume()
 {
     lock();
 
-    db<Thread>(TRC) << "Thread::resume(this=" << this << ")" << endl;
+    db<GEAMQ>(WRN) << "Thread::resume(this=" << this << ") state= " << _state << endl;
 
     if (_state == SUSPENDED)
     {
         _state = READY;
         // Recalcular rank antes de voltar 
+        db<GEAMQ>(WRN) << "Calling handle" << endl;
         this->criterion().handle(EAMQ::RESUME_THREAD);
+
+        db<GEAMQ>(WRN) << "Calling resume" << endl;
         _scheduler.resume(this);
 
-        if(preemptive)
+        if(preemptive) {
+            db<GEAMQ>(WRN) << "Calling reschedule" << endl;
             reschedule(_link.rank().queue());
+        }
     } else
-        db<Thread>(WRN) << "Resume called for unsuspended object!" << endl;
+        db<GEAMQ>(WRN) << "Resume called for unsuspended object!" << endl;
 
     unlock();
 }

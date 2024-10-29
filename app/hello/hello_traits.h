@@ -14,7 +14,7 @@ struct Traits<Build> : public Traits_Tokens
     static const unsigned int ARCHITECTURE = IA32;
     static const unsigned int MACHINE = PC;
     static const unsigned int MODEL = Legacy_PC;
-    static const unsigned int CPUS = ((MODEL == Legacy_PC) || (MODEL == Raspberry_Pi3) || (MODEL == Realview_PBX) || (MODEL == Zynq) || (MODEL == SiFive_U)) ? 2 : 1;
+    static const unsigned int CPUS =  1;
     static const unsigned int NETWORKING = STANDALONE;
     static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)
 
@@ -38,13 +38,19 @@ struct Traits<Debug> : public Traits<Build>
 template <>
 struct Traits<EAMQ> : public Traits<Build>
 {
+    static const bool debugged = false;
+};
+
+template <>
+struct Traits<GEAMQ> : public Traits<Build>
+{
     static const bool debugged = true;
 };
 
 template <>
 struct Traits<Lists> : public Traits<Build>
 {
-    static const bool debugged = true;
+    static const bool debugged = false;
 };
 
 template <>

@@ -141,7 +141,15 @@ protected:
 
     Queue::Element * link() { return &_link; }
 
-    static Thread * volatile running() { return _not_booting ? _scheduler.chosen() : reinterpret_cast<Thread * volatile>(CPU::id() + 1); }
+    static Thread * volatile running() { 
+        if (_not_booting) {
+            // db<Thread>(WRN) << "Thread::running() => " << _scheduler.chosen() << endl;
+            return _scheduler.chosen();
+        } else {
+            // db<Thread>(WRN) << "NOT BOOTING!! " << reinterpret_cast<Thread * volatile>(CPU::id() + 1)<< endl;
+            return reinterpret_cast<Thread * volatile>(CPU::id() + 1);
+        }
+    }
 
     static void lock() {
         CPU::int_disable();

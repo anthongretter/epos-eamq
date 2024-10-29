@@ -1422,16 +1422,17 @@ public:
 
     void insert(Element *e)
     {
-        db<Lists>(TRC) << "Scheduling_List::insert(e=" << e
-                       << ") => {p=" << (e ? e->prev() : (void *)-1)
-                       << ",o=" << (e ? e->object() : (void *)-1)
-                       << ",n=" << (e ? e->next() : (void *)-1)
-                       << "}" << endl;
 
         if (_chosen[R::current_head()])
             Base::insert(e);
         else
             _chosen[R::current_head()] = e;
+        
+        db<Lists>(WRN) << "Scheduling_List::insert(e=" << e
+                       << ") => {p=" << (e ? e->prev() : (void *)-1)
+                       << ",o=" << (e ? e->object() : (void *)-1)
+                       << ",n=" << (e ? e->next() : (void *)-1)
+                       << "}" << " queue: " << (e->rank().queue()) << endl;
     }
 
     Element *remove(Element *e)
@@ -1562,6 +1563,7 @@ public:
 
     Element *volatile &chosen()
     {
+        //db<Lists>(WRN) << "Pegando CHOSEN da fila" << R::current_queue() << " : " << _list[R::current_queue()].chosen() << endl;
         return _list[R::current_queue()].chosen();
     }
     
@@ -1747,173 +1749,617 @@ __END_UTIL
 #endif
 
 
-// Thread(entry=0x80000038,state=0,priority=-1,queue=3,stack={b=0xffc3be0c,s=16384}
-// ,context={b=0xffc3fddc,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00000000,
-// sp=0xffb03c58,ip=0x80000038,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10,cr3=0x
-// 3fffc000}}) => 0xffc3fee8@3
-// CPU 0 Fila 0: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 1: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 2: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 3: CPU 0 CHOSEN: 0xffc3fee8
+// Scheduling_List::insert(e=0xffc3fee8) => {p=0x00000000,o=0xffc3fe14,n=0x000000} queue: 3
+// CPU 0 Fila 0 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 1 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 2 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 3 Tamanho  0 CPU 0 CHOSEN: 0xffc3fe14
 
-// Thread(entry=0x8000512c,state=1,priority=2147483647,queue=3,stack={b=0xffc37c48,
-// s=16384},context={b=0xffc3bc18,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x0
-// 0000000,sp=0xffb03c58,ip=0x8000512c,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=1
-// 0,cr3=0x3fffc000}}) => 0xffc3bd24@3
-// CPU 0 Fila 0: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 1: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 2: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 3: 0xffc3bd24 CPU 0 CHOSEN: 0xffc3fee8
+// Scheduling_List::insert(e=0xffc3bd24) => {p=0x00000000,o=0xffc3bc50,n=0x000000} queue: 3
+// CPU 0 Fila 0 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 1 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 2 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 3 Tamanho  1 0xffc3bc50 CPU 0 CHOSEN: 0xffc3fe14
+
 // MAIN: Hello world!
+// Scheduling_List::insert(e=0x80800f38) => {p=0x00000000,o=0x80800e64,n=0xffc3b4} queue: 3
+// CPU 0 Fila 0 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 1 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 2 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 3 Tamanho  2 0xffc3bc50 0x80800e64 CPU 0 CHOSEN: 0xffc3fe14
 
-// Thread(entry=0x800000ab,state=1,priority=1073741823,queue=3,stack={b=0xffc33c28,
-// s=16384},context={b=0xffc37bf4,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x0
-// 0000000,sp=0xffc3f6e4,ip=0x800000ab,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=1
-// 0,cr3=0x3fffc000}}) => 0x80800f38@3
-// CPU 0 Fila 0: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 1: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 2: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 3: 0xffc3bd24 0x80800f38 CPU 0 CHOSEN: 0xffc3fee8
-// Thread ready!
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// Scheduling_List::insert(e=0x80800d94) => {p=0x00000000,o=0x80800cc0,n=0x000000} queue: 2
+// CPU 0 Fila 0 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 1 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 2 Tamanho  0 CPU 0 CHOSEN: 0x80800cc0
+// CPU 0 Fila 3 Tamanho  2 0xffc3bc50 0x80800e64 CPU 0 CHOSEN: 0xffc3fe14
 
-// Thread(entry=0x800000ab,state=1,priority=536870911,queue=2,stack={b=0xffc2fc08,s
-// =16384},context={b=0xffc33bd4,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00
-// 000000,sp=0xffc3f6e4,ip=0x800000ab,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10
-// ,cr3=0x3fffc000}}) => 0x80800d94@2
-// CPU 0 Fila 0: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 1: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 2: CPU 0 CHOSEN: 0x80800d94
-// CPU 0 Fila 3: 0xffc3bd24 0x80800f38 CPU 0 CHOSEN: 0xffc3fee8
-// Thread ready!
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
 // bruh - 1
-// Scheduling_List::remove(e=0x80800d94) => {p=0x00000000,o=0x80800cc0,n=0x00000000
-// }
+// Scheduling_List::remove(e=0x80800d94) => {p=0x00000000,o=0x80800cc0,n=0x000000}
+// next_queue chamado, levou para: 3
+// Scheduling_List::insert(e=0x80800bf0) => {p=0x00000000,o=0x80800b1c,n=0x000000} queue: 2
+// CPU 0 Fila 0 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 1 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 2 Tamanho  0 CPU 0 CHOSEN: 0x80800b1c
+// CPU 0 Fila 3 Tamanho  2 0xffc3bc50 0x80800e64 CPU 0 CHOSEN: 0xffc3fe14
 
-// Thread(entry=0x800000ab,state=1,priority=0,queue=2,stack={b=0xffc2bbe8,s=16384},
-// context={b=0xffc2fbb4,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00000000,s
-// p=0xffc3f6e4,ip=0x800000ab,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10,cr3=0x3
-// fffc000}}) => 0x80800bf0@2
-// CPU 0 Fila 0: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 1: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 2: CPU 0 CHOSEN: 0x80800bf0
-// CPU 0 Fila 3: 0xffc3bd24 0x80800f38 CPU 0 CHOSEN: 0xffc3fee8
-// Thread ready!
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
 // bruh - 2
-// Scheduling_List::remove(e=0x80800bf0) => {p=0x00000000,o=0x80800b1c,n=0x00000000
-// }
+// Scheduling_List::remove(e=0x80800bf0) => {p=0x00000000,o=0x80800b1c,n=0x000000}
+// next_queue chamado, levou para: 3
+// Scheduling_List::insert(e=0x80800a4c) => {p=0x80800f38,o=0x80800978,n=0xffc3b4} queue: 3
+// CPU 0 Fila 0 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 1 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 2 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 3 Tamanho  3 0xffc3bc50 0x80800978 0x80800e64 CPU 0 CHOSEN: 0xffc31
+// 4
 
-// Thread(entry=0x800000ab,state=1,priority=1073741823,queue=3,stack={b=0xffc27bc8,
-// s=16384},context={b=0xffc2bb94,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x0
-// 0000000,sp=0xffc3f6e4,ip=0x800000ab,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=1
-// 0,cr3=0x3fffc000}}) => 0x80800a4c@3
-// CPU 0 Fila 0: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 1: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 2: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 3: 0xffc3bd24 0x80800a4c 0x80800f38 CPU 0 CHOSEN: 0xffc3fee8
-// Thread ready!
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// Scheduling_List::insert(e=0x808008a8) => {p=0x00000000,o=0x808007d4,n=0x000000} queue: 2
+// CPU 0 Fila 0 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 1 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 2 Tamanho  0 CPU 0 CHOSEN: 0x808007d4
+// CPU 0 Fila 3 Tamanho  3 0xffc3bc50 0x80800978 0x80800e64 CPU 0 CHOSEN: 0xffc31
+// 4
 
-// Thread(entry=0x800000ab,state=1,priority=536870911,queue=2,stack={b=0xffc23ba8,s
-// =16384},context={b=0xffc27b74,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00
-// 000000,sp=0xffc3f6e4,ip=0x800000ab,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10
-// ,cr3=0x3fffc000}}) => 0x808008a8@2
-// CPU 0 Fila 0: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 1: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 2: CPU 0 CHOSEN: 0x808008a8
-// CPU 0 Fila 3: 0xffc3bd24 0x80800a4c 0x80800f38 CPU 0 CHOSEN: 0xffc3fee8
-// Thread ready!
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
 // bruh - 4
-// Scheduling_List::remove(e=0x808008a8) => {p=0x00000000,o=0x808007d4,n=0x00000000
-// }
+// Scheduling_List::remove(e=0x808008a8) => {p=0x00000000,o=0x808007d4,n=0x000000}
+// next_queue chamado, levou para: 3
+// Scheduling_List::insert(e=0x80800704) => {p=0x00000000,o=0x80800630,n=0x000000} queue: 2
+// CPU 0 Fila 0 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 1 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 2 Tamanho  0 CPU 0 CHOSEN: 0x80800630
+// CPU 0 Fila 3 Tamanho  3 0xffc3bc50 0x80800978 0x80800e64 CPU 0 CHOSEN: 0xffc31
+// 4
 
-// Thread(entry=0x800000ab,state=1,priority=0,queue=2,stack={b=0xffc1fb88,s=16384},
-// context={b=0xffc23b54,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00000000,s
-// p=0xffc3f6e4,ip=0x800000ab,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10,cr3=0x3
-// fffc000}}) => 0x80800704@2
-// CPU 0 Fila 0: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 1: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 2: CPU 0 CHOSEN: 0x80800704
-// CPU 0 Fila 3: 0xffc3bd24 0x80800a4c 0x80800f38 CPU 0 CHOSEN: 0xffc3fee8
-// Thread ready!
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
 // bruh - 5
-// Scheduling_List::remove(e=0x80800704) => {p=0x00000000,o=0x80800630,n=0x00000000
-// }
+// Scheduling_List::remove(e=0x80800704) => {p=0x00000000,o=0x80800630,n=0x000000}
+// next_queue chamado, levou para: 3
+// Scheduling_List::insert(e=0x80800524) => {p=0x00000000,o=0x80800450,n=0x808008} queue: 3
+// Scheduling_List::remove(e=0x80800524) => {p=0x00000000,o=0x80800450,n=0x808008}
+// CPU 0 Fila 0 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 1 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 2 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 3 Tamanho  3 0xffc3bc50 0x80800978 0x80800e64 CPU 0 CHOSEN: 0xffc31
+// 4
 
-// Thread(entry=0x800001aa,state=2,priority=0,queue=3,stack={b=0xffc1bb68,s=16384},
-// context={b=0xffc1fb34,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00000000,s
-// p=0xffc3f6e4,ip=0x800001aa,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10,cr3=0x3
-// fffc000}}) => 0x80800524@3
-// Thread not ready!
-// Scheduling_List::remove(e=0x80800524) => {p=0x00000000,o=0x80800450,n=0x80800f38
-// }
-// CPU 0 Fila 0: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 1: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 2: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 3: 0xffc3bd24 0x80800a4c 0x80800f38 CPU 0 CHOSEN: 0xffc3fee8
+// Thread::resume(this=0x80800450)
+// RESUME_THREAD
+// Scheduling_List::insert(e=0x80800524) => {p=0x00000000,o=0x80800450,n=0x808008} queue: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// Scheduling_List::insert(e=0x80800344) => {p=0x00000000,o=0x80800270,n=0x000000} queue: 32
+// Scheduling_List::remove(e=0x80800344) => {p=0x00000000,o=0x80800270,n=0x000000}
+// CPU 0 Fila 0 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 1 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 2 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 3 Tamanho  4 0xffc3bc50 0x80800978 0x80800e64 0x80800450 CPU 0 CHON
+// : 0xffc3fe14
 
-// Thread(entry=0x800001aa,state=2,priority=-1,queue=32,stack={b=0xffc17b48,s=16384
-// },context={b=0xffc1bb14,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00000000
-// ,sp=0xffc3f6e4,ip=0x800001aa,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10,cr3=0
-// x3fffc000}}) => 0x80800344@32
-// Thread not ready!
-// Scheduling_List::remove(e=0x80800344) => {p=0x00000000,o=0x80800270,n=0x00000000
-// }
-// CPU 0 Fila 0: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 1: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 2: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 3: 0xffc3bd24 0x80800a4c 0x80800f38 0x80800524 CPU 0 CHOSEN: 0xffc3fe
-// e8
+// Thread::resume(this=0x80800270)
+// Scheduling_List::insert(e=0x80800344) => {p=0x00000000,o=0x80800270,n=0x000000} queue: 32
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// Scheduling_List::insert(e=0x80800164) => {p=0x00000000,o=0x80800090,n=0x000000} queue: 0
+// Scheduling_List::remove(e=0x80800164) => {p=0x00000000,o=0x80800090,n=0x000000}
+// CPU 0 Fila 0 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 1 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 2 Tamanho  0 CPU 0 CHOSEN: 0x00000000
+// CPU 0 Fila 3 Tamanho  4 0xffc3bc50 0x80800978 0x80800e64 0x80800450 CPU 0 CHON
+// : 0xffc3fe14
 
-// Thread(entry=0x800001aa,state=2,priority=-1,queue=0,stack={b=0xffc13b28,s=16384}
-// ,context={b=0xffc17af4,{flags=0x200,ax=0,bx=0,cx=0,dx=0,si=0,di=0,bp=0x00000000,
-// sp=0xffc3f6e4,ip=0x800001aa,cs=8,ccs=8,cds=10,ces=10,cfs=10,cgs=10,css=10,cr3=0x
-// 3fffc000}}) => 0x80800164@0
-// Thread not ready!
-// Scheduling_List::remove(e=0x80800164) => {p=0x00000000,o=0x80800090,n=0x00000000
-// }
-// CPU 0 Fila 0: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 1: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 2: CPU 0 CHOSEN: 0x00000000
-// CPU 0 Fila 3: 0xffc3bd24 0x80800a4c 0x80800f38 0x80800524 CPU 0 CHOSEN: 0xffc3fe
-// e8
+// Thread::resume(this=0x80800090)
+// Scheduling_List::insert(e=0x80800164) => {p=0x00000000,o=0x80800090,n=0x000000} queue: 0
+// next_queue chamado, levou para: 0
 // poggers - 8
-// Scheduling_List::remove(e=0x80800164) => {p=0x00000000,o=0x80800090,n=0x00000000
-// }
-// Thread::join(this=0x80800e64,state=1)
-// Scheduling_List::remove(e=0xffc3fee8) => {p=0x00000000,o=0xffc3fe14,n=0x80800524
-// }
-// PROXIMO THREAD: 0x80800524
+// Scheduling_List::remove(e=0x80800164) => {p=0x00000000,o=0x80800090,n=0x000000}
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// Scheduling_List::remove(e=0xffc3fee8) => {p=0x00000000,o=0xffc3fe14,n=0x808004}
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
 // poggers - 6
-// Scheduling_List::remove(e=0x80800524) => {p=0x00000000,o=0x80800450,n=0x80800f38
-// }
+// Scheduling_List::remove(e=0x80800524) => {p=0x00000000,o=0x80800450,n=0x808008}
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
 // bruh - 0
-// Scheduling_List::remove(e=0x80800f38) => {p=0x00000000,o=0x80800e64,n=0x80800a4c
-// }
-// Thread::join(this=0x80800cc0,state=4)
-// Thread::join(this=0x80800b1c,state=4)
-// Thread::join(this=0x80800978,state=1)
-// Scheduling_List::remove(e=0xffc3fee8) => {p=0x00000000,o=0xffc3fe14,n=0x80800a4c
-// }
-// PROXIMO THREAD: 0x80800f38
+// Scheduling_List::remove(e=0x80800f38) => {p=0x00000000,o=0x80800e64,n=0x80800c}
+// Scheduling_List::insert(e=0xffc3fee8) => {p=0x00000000,o=0xffc3fe14,n=0x80800c} queue: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// Scheduling_List::insert(e=0x80800f38) => {p=0x00000000,o=0x80800e64,n=0x80800c} queue: 2
+// Scheduling_List::remove(e=0xffc3fee8) => {p=0x00000000,o=0xffc3fe14,n=0x80800c}
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// Scheduling_List::insert(e=0x80800a4c) => {p=0x00000000,o=0x80800978,n=0x000000} queue: 2
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
 // bruh - 3
-// Scheduling_List::remove(e=0x80800a4c) => {p=0x00000000,o=0x80800978,n=0x80800f38
-// }
-// Thread::join(this=0x808007d4,state=4)
-// Thread::join(this=0x80800630,state=4)
-// Thread::join(this=0x80800450,state=3)
-// Scheduling_List::remove(e=0xffc3fee8) => {p=0x00000000,o=0xffc3fe14,n=0x00000000
-// }
-// PROXIMO THREAD: 0x80800f38
+// Scheduling_List::remove(e=0x80800a4c) => {p=0x00000000,o=0x80800978,n=0x808008}
+// Scheduling_List::insert(e=0xffc3fee8) => {p=0x00000000,o=0xffc3fe14,n=0x000000} queue: 3
+// next_queue chamado, levou para: 3
+// Scheduling_List::insert(e=0xffc3bd24) => {p=0x00000000,o=0xffc3bc50,n=0x000000} queue: 2
+// Scheduling_List::remove(e=0xffc3fee8) => {p=0x00000000,o=0xffc3fe14,n=0x000000}
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// Scheduling_List::insert(e=0x80800524) => {p=0xffc3bd24,o=0x80800450,n=0x000000} queue: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
 // poggers - 6
-// Scheduling_List::remove(e=0x80800524) => {p=0x00000000,o=0x80800450,n=0x80800f38
-// }
+// Scheduling_List::remove(e=0x80800524) => {p=0x00000000,o=0x80800450,n=0x808008}
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// Scheduling_List::insert(e=0x80800164) => {p=0x00000000,o=0x80800090,n=0x000000} queue: 0
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
 // poggers - 8
-// Scheduling_List::remove(e=0x80800164) => {p=0x00000000,o=0x80800090,n=0x00000000
-// }
-// Scheduling_List::remove(e=0x80800524) => {p=0x00000000,o=0x80800450,n=0x80800f38
-// }
-// Thread::join(this=0x80800270,state=1)
-// Scheduling_List::remove(e=0xffc3fee8) => {p=0x00000000,o=0xffc3fe14,n=0x00000000
-// }
-// PROXIMO THREAD: 0xffc3bd24
-// Scheduling_List::remove(e=0x80800164) => {p=0x00000000,o=0x80800090,n=0x00000000
-// }
+// Scheduling_List::remove(e=0x80800164) => {p=0x00000000,o=0x80800090,n=0x000000}
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// Scheduling_List::insert(e=0x80800524) => {p=0xffc3bd24,o=0x80800450,n=0x000000} queue: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// Scheduling_List::remove(e=0x80800524) => {p=0x00000000,o=0x80800450,n=0x808008}
+// Scheduling_List::insert(e=0xffc3fee8) => {p=0x00000000,o=0xffc3fe14,n=0x000000} queue: 3
+// next_queue chamado, levou para: 3
+// Scheduling_List::remove(e=0xffc3fee8) => {p=0x00000000,o=0xffc3fe14,n=0x000000}
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// Scheduling_List::insert(e=0x80800164) => {p=0x00000000,o=0x80800090,n=0x000000} queue: 0
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// Scheduling_List::remove(e=0x80800164) => {p=0x00000000,o=0x80800090,n=0x000000}
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
+// next_queue chamado, levou para: 3
+// next_queue chamado, levou para: 0
+// next_queue chamado, levou para: 1
+// next_queue chamado, levou para: 2
