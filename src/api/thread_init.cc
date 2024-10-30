@@ -31,15 +31,24 @@ void Thread::init()
         // If EPOS is a library, then adjust the application entry point to __epos_app_entry, which will directly call main().
         // In this case, _init will have already been called, before Init_Application to construct MAIN's global objects.
         Main * main = reinterpret_cast<Main *>(__epos_app_entry);
-
+        
         new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::MAIN), main);
     }
-    // P3 - outros cores precisa esperar BSP criar thread MAIN antes
-    CPU::smp_barrier();
+    // CPU::smp_barrier();
 
+
+    // P3 - outros cores precisa esperar BSP criar thread MAIN antes
+    // // CPU::smp_barrier();
+    if (CPU::id() != CPU::BSP)
+        CPU::smp_barrier();
 
     // Idle thread creation does not cause rescheduling (see Thread::constructor_epilogue)
     new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
+
+    if (CPU::id() == CPU::BSP)
+        CPU::smp_barrier();
+
+    // CPU::smp_barrier();
 
     // The installation of the scheduler timer handler does not need to be done after the
     // creation of threads, since the constructor won't call reschedule() which won't call

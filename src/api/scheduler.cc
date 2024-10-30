@@ -380,16 +380,16 @@ void GEAMQ::handle(Event event) {
         // // db<Lists>(WRN) << "CRIANDO THREAD" << endl;
         unsigned int count = 5;
         for (int q = 0; q < QUEUES; q++) {
-            db<GEAMQ>(TRC) << "CPU " << CPU::id() << " Fila " << q << " Tamanho  " <<  Thread::scheduler()->size(q) << " ";
+            db<GEAMQ>(WRN) << "CPU " << CPU::id() << " Fila " << q << " Tamanho  " <<  Thread::scheduler()->size(q) << " ";
             for (Thread* t = Thread::scheduler()->tail(q)->object(); t != nullptr; t = t->link()->prev()->object()) {
                 if (count == 0) {break;} 
-                db<GEAMQ>(TRC) << t << " ";
+                db<GEAMQ>(WRN) << t << " ";
                 count--;
             }
-            db<GEAMQ>(TRC) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q)->object();
-        db<GEAMQ>(TRC) << endl;
+            db<GEAMQ>(WRN) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q)->object();
+        db<GEAMQ>(WRN) << endl;
         }
-        db<GEAMQ>(TRC) << endl;
+        db<GEAMQ>(WRN) << endl;
     }
     if (event & UPDATE) {
         // Depois da proxima ser definida e avisada de sua entrada, podemos desproteger as recem entradas

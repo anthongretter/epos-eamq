@@ -134,6 +134,7 @@ public:
             behind = next;
         }
     }
+    alignas (int) static bool _not_booting;
 
 protected:
     void constructor_prologue(unsigned int stack_size);
@@ -143,10 +144,10 @@ protected:
 
     static Thread * volatile running() { 
         if (_not_booting) {
-            // db<Thread>(WRN) << "Thread::running() => " << _scheduler.chosen() << endl;
+            db<GEAMQ>(WRN) << "AAAAAAAAA Thread::running() => " << _scheduler.chosen() << endl;
             return _scheduler.chosen();
         } else {
-            // db<Thread>(WRN) << "NOT BOOTING!! " << reinterpret_cast<Thread * volatile>(CPU::id() + 1)<< endl;
+            db<GEAMQ>(WRN) << "BBBBBBBBB NOT BOOTING!! " << reinterpret_cast<Thread * volatile>(CPU::id() + 1)<< endl;
             return reinterpret_cast<Thread * volatile>(CPU::id() + 1);
         }
     }
@@ -199,7 +200,6 @@ protected:
     Thread * volatile _joining;
     Queue::Element _link;
 
-    alignas (int) static bool _not_booting;
     static volatile unsigned int _thread_count;
     static Scheduler_Timer * _timer;
     static Scheduler<Thread> _scheduler;
