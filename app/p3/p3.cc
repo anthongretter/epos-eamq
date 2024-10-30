@@ -2,6 +2,7 @@
 #include <process.h>
 #include <time.h>
 #include <real-time.h>
+#include <utility/random.h>
 
 using namespace EPOS;
 
@@ -9,14 +10,16 @@ OStream cout;
 
 int bruh(int n)
 {
-    cout << "bruh - " << n << endl;
+    cout << "CPU: " << CPU::id() << " bruh - " << n << endl;
+    Alarm::delay(50000);
     return 0;
 }
 
 int poggers(int n)
 {
     do {
-        cout << "poggers - " << n << endl;
+        cout << "CPU: " << CPU::id() << " poggers - " << n << endl;
+        Alarm::delay(50000);
     } while (Periodic_Thread::wait_next());
     return 0;
 }
@@ -43,8 +46,8 @@ int main()
     {
         // Thread periodic
         auto conf = Periodic_Thread::Configuration(
-            500000,        // periodo
-            120000,          // deadline
+            500000 + (int(Random::random()) % 1000000),        // periodo
+            120000 + (int(Random::random()) % 2400000),          // deadline
             Periodic_Thread::UNKNOWN,
             Periodic_Thread::NOW,
             2
