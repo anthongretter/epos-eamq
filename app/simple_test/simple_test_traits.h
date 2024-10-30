@@ -14,14 +14,14 @@ struct Traits<Build> : public Traits_Tokens
     static const unsigned int ARCHITECTURE = IA32;
     static const unsigned int MACHINE = PC;
     static const unsigned int MODEL = Legacy_PC;
-    static const unsigned int CPUS = 1;
+    static const unsigned int CPUS = 4;
     static const unsigned int NETWORKING = STANDALONE;
     static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)
 
     // Default flags
     static const bool enabled = true;
     static const bool monitored = true;
-    static const bool debugged = true;
+    static const bool debugged = false;
     static const bool hysterically_debugged = false;
 };
 
@@ -36,21 +36,33 @@ struct Traits<Debug> : public Traits<Build>
 };
 
 template <>
+struct Traits<EAMQ> : public Traits<Build>
+{
+    static const bool debugged = false;
+};
+
+template <>
+struct Traits<GEAMQ> : public Traits<Build>
+{
+    static const bool debugged = true;
+};
+
+template <>
 struct Traits<Lists> : public Traits<Build>
 {
-    static const bool debugged = hysterically_debugged;
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Spin> : public Traits<Build>
 {
-    static const bool debugged = hysterically_debugged;
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Heaps> : public Traits<Build>
 {
-    static const bool debugged = hysterically_debugged;
+    static const bool debugged = false;
 };
 
 template <>
@@ -58,13 +70,14 @@ struct Traits<Observers> : public Traits<Build>
 {
     // Some observed objects are created before initializing the Display
     // Enabling debug may cause trouble in some Machines
-    static const bool debugged = true;
+    static const bool debugged = false;
 };
 
 // System Parts (mostly to fine control debugging)
 template <>
 struct Traits<Boot> : public Traits<Build>
 {
+    static const bool debugged = false;
 };
 
 template <>
@@ -82,6 +95,7 @@ struct Traits<Init> : public Traits<Build>
 template <>
 struct Traits<Framework> : public Traits<Build>
 {
+    static const bool debugged = false;
 };
 
 template <>
@@ -110,7 +124,8 @@ struct Traits<Application> : public Traits<Build>
 template <>
 struct Traits<System> : public Traits<Build>
 {
-    static const bool multithread = (Traits<Application>::MAX_THREADS > 1);
+    static const bool multithread = (Traits<Application>::MAX_THREADS > 1) || (CPUS > 1);
+    static const bool multicore = multithread && (CPUS > 1);
     static const bool multiheap = Traits<Scratchpad>::enabled;
 
     static const unsigned long LIFE_SPAN = 1 * YEAR; // s
@@ -119,19 +134,23 @@ struct Traits<System> : public Traits<Build>
     static const bool reboot = true;
 
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
-    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + 1) * Traits<Application>::STACK_SIZE;
+    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + Traits<Build>::CPUS) * Traits<Application>::STACK_SIZE;
 };
 
 template <>
 struct Traits<Thread> : public Traits<Build>
 {
     static const bool enabled = Traits<System>::multithread;
+    static const bool smp = Traits<System>::multicore;
     static const bool trace_idle = hysterically_debugged;
     static const bool simulate_capacity = false;
     static const int priority_inversion_protocol = NONE;
 
-    typedef EAMQ Criterion;
+
+    typedef IF<(CPUS > 1), GEAMQ, GEAMQ>::Result Criterion;
     static const unsigned int QUANTUM = 10000; // us
+
+    static const bool debugged = false;
 };
 
 template <>
@@ -144,12 +163,14 @@ template <>
 struct Traits<Synchronizer> : public Traits<Build>
 {
     static const bool enabled = Traits<System>::multithread;
+    static const bool debugged = false;
 };
 
 template <>
 struct Traits<Alarm> : public Traits<Build>
 {
     static const bool visible = hysterically_debugged;
+    static const bool debugged = false;
 };
 
 template <>

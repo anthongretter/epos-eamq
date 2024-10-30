@@ -396,8 +396,8 @@ public:
     int rank_eamq();
     const volatile unsigned int &queue() const volatile { return _queue; } // returns the Thread's queue
 
-    static const volatile unsigned int &current_queue() { db<Thread>(WRN) << "PROBLEMAAAA: " << endl; return _current_queue;} // current global queue
-    virtual void next_queue() { ++_current_queue %= QUEUES;  db<Thread>(WRN) << "PROBLEMAAAA: " << endl;}        // points to next global queue with threads
+    static const volatile unsigned int &current_queue() {return _current_queue;} // current global queue
+    virtual void next_queue() { ++_current_queue %= QUEUES;}        // points to next global queue with threads
 
 protected:    
     void set_queue(unsigned int q) { _queue = q; };
@@ -445,7 +445,6 @@ public:
     GEAMQ(const Microsecond p, const Microsecond d = SAME, const Microsecond c = UNKNOWN): EAMQ(p, d, c) {}
     
     using EAMQ::queue;
-    // static volatile unsigned current_queue[HEADS];
     
 protected:
     static volatile unsigned int _current_queue[HEADS];
@@ -464,13 +463,10 @@ protected:
 public:
     int rank_eamq();
     void handle(Event event);
-    void next_queue() override { 
-        _current_queue[CPU::id()] = (_current_queue[CPU::id()] + 1) % QUEUES;
-        //db<Thread>(WRN) << "core: " << CPU::id() << " current queue: "  << _current_queue[CPU::id()] << endl;
-    }
-    static const volatile unsigned int &current_queue() {
-        //db<Thread>(WRN) << "_current_queue[CPU::id()]:  " << _current_queue[CPU::id()] << endl; 
-        return _current_queue[CPU::id()]; }
+
+    void next_queue() override { _current_queue[CPU::id()] = (_current_queue[CPU::id()] + 1) % QUEUES;}
+    
+    static const volatile unsigned int &current_queue() { return _current_queue[CPU::id()]; }
     static unsigned int current_head() { return CPU::id(); }
 
 

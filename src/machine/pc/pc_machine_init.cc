@@ -7,7 +7,7 @@ __BEGIN_SYS
 void Machine::pre_init(System_Info * si)
 {
 
-    // P3 - 
+    // P3 - Sincroniza inicializacao da barreira
     if (multicore) {
         CPU::smp_barrier_init(si->bm.n_cpus);
         CPU::smp_barrier();

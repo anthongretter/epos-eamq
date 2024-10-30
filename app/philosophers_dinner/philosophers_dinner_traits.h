@@ -19,7 +19,7 @@ template<> struct Traits<Build>: public Traits_Tokens
 
     // Default flags
     static const bool enabled = true;
-    static const bool debugged = true;
+    static const bool debugged = false;
     static const bool monitored = true;
     static const bool hysterically_debugged = false;
 };
@@ -120,7 +120,7 @@ template<> struct Traits<Thread>: public Traits<Build>
     static const bool simulate_capacity = false;
     static const int priority_inversion_protocol = NONE;
 
-    typedef IF<(CPUS > 1), GEAMQ, RR>::Result Criterion;
+    typedef IF<(CPUS > 1), GEAMQ, GEAMQ>::Result Criterion;
     static const unsigned int QUANTUM = 10000; // us
 };
 

@@ -95,7 +95,7 @@ public:
     static volatile bool wait_next() {
         Periodic_Thread * t = reinterpret_cast<Periodic_Thread *>(running());
 
-        db<EAMQ>(TRC) << "Thread::wait_next(this=" << t << ",times=" << t->_alarm.times() << ")" << endl;
+        db<GEAMQ>(TRC) << "Thread::wait_next(this=" << t << ",times=" << t->_alarm.times() << ")" << endl;
 
         t->criterion().handle(Criterion::JOB_FINISH);
 

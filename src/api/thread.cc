@@ -153,6 +153,7 @@ int Thread::join()
         _joining = prev;
         prev->_state = SUSPENDED;
         _scheduler.suspend(prev); // implicitly choose() if suspending chosen()
+        // db<GEAMQ>(WRN) << "JOIN prev: " << prev << endl;
         prev->criterion().handle(EAMQ::CHANGE_QUEUE);
         Thread *next = _scheduler.chosen();
 
@@ -173,6 +174,7 @@ void Thread::pass()
     db<Thread>(TRC) << "Thread::pass(this=" << this << ")" << endl;
 
     Thread *prev = running();
+    // db<GEAMQ>(WRN) << "PASS prev: " << prev << endl;
     prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread *next = _scheduler.choose(this);
 
@@ -265,6 +267,7 @@ void Thread::exit(int status)
         prev->_joining = 0;
     }
 
+    db<Thread>(WRN) << "EXIT prev " << prev << endl;
     prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread *next = _scheduler.choose(); // at least idle will always be there
 
@@ -275,10 +278,10 @@ void Thread::exit(int status)
 
 void Thread::sleep(Queue *q)
 {
-    db<Thread>(TRC) << "Thread::sleep(running=" << running() << ",q=" << q << ")" << endl;
-
     assert(locked()); // locking handled by caller
 
+    db<GEAMQ>(TRC) << endl<< "Thread::sleep(running=" << running() << ",q=" << q<< ")" << endl;
+    
     Thread *prev = running();
     _scheduler.suspend(prev);
     prev->_state = WAITING;
@@ -287,23 +290,34 @@ void Thread::sleep(Queue *q)
 
     prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread *next = _scheduler.chosen();
+    //db<GEAMQ>(WRN) << "PREV: " << prev << ", NEXT: "<< next << endl;
 
     dispatch(prev, next);
+
 }
 
 void Thread::wakeup(Queue *q)
 {
-    db<Thread>(TRC) << "Thread::wakeup(running=" << running() << ",q=" << q << ")" << endl;
 
     assert(locked()); // locking handled by caller
 
     if (!q->empty())
     {
         Thread *t = q->remove()->object();
+
+        
+
         t->_state = READY;
         t->_waiting = 0;
+        t->criterion().handle(EAMQ::RESUME_THREAD);
         // TODO: Throw a new event to recalculate rank from behind when the thread is woken up
         _scheduler.resume(t);
+
+        db<GEAMQ>(TRC) << endl << "Thread::wakeup(wakingup=" << t << ",q=" << q << ")" << endl;
+
+        for (Queue::Element * i = q->begin(); i != nullptr; i = i->next()) {
+            db<GEAMQ>(TRC) << "sleeping - Element: " << i->object() << endl;
+        }
 
         if(preemptive)
             reschedule(t->_link.rank().queue());
@@ -346,6 +360,7 @@ void Thread::reschedule()
     Thread *prev = running();
     //db<Thread>(WRN) << "Thread PREV: " << prev->link() << endl;
     // Atualiza current_queue para proxima fila (next tem que ser thread da proxima fila)
+    // db<GEAMQ>(WRN) << "RESCHEDULE prev: " << prev << endl;
     prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread *next = _scheduler.choose();
     //db<Thread>(WRN) << "Thread NEXT: " << next->link() << endl;

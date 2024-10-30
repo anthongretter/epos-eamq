@@ -360,7 +360,7 @@ void GEAMQ::handle(Event event) {
         do {
             // Pula para próxima fila
             GEAMQ::next_queue();
-            db<Lists>(WRN) << "next_queue chamado, levou para: " << current_queue() << endl;
+            db<Lists>(TRC) << "next_queue chamado, levou para: " << current_queue() << endl;
         // Enquanto fila atual não vazia ou uma volta completa
         // ACHO que da certo apenas com chosen() 
         } while (Thread::scheduler()->empty(current_queue()) && !(Thread::scheduler()->chosen()) && (current_queue() != last));
@@ -378,18 +378,18 @@ void GEAMQ::handle(Event event) {
     }
     if (event & CREATE) {
         // // db<Lists>(WRN) << "CRIANDO THREAD" << endl;
-        unsigned int count = 5;
-        for (int q = 0; q < QUEUES; q++) {
-            db<GEAMQ>(WRN) << "CPU " << CPU::id() << " Fila " << q << " Tamanho  " <<  Thread::scheduler()->size(q) << " ";
-            for (Thread* t = Thread::scheduler()->tail(q)->object(); t != nullptr; t = t->link()->prev()->object()) {
-                if (count == 0) {break;} 
-                db<GEAMQ>(WRN) << t << " ";
-                count--;
-            }
-            db<GEAMQ>(WRN) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q)->object();
-        db<GEAMQ>(WRN) << endl;
-        }
-        db<GEAMQ>(WRN) << endl;
+        //unsigned int count = 5;
+        // for (int q = 0; q < QUEUES; q++) {
+        //     db<GEAMQ>(WRN) << "CPU " << CPU::id() << " Fila " << q << " Tamanho  " <<  Thread::scheduler()->size(q) << " ";
+        //     for (Thread* t = Thread::scheduler()->tail(q)->object(); t != nullptr; t = t->link()->prev()->object()) {
+        //         //if (count == 0) {break;} 
+        //         db<GEAMQ>(WRN) << t << " ";
+        //         //count--;
+        //     }
+        //     db<GEAMQ>(WRN) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q)->object();
+        // db<GEAMQ>(WRN) << endl;
+        // }
+        // db<GEAMQ>(WRN) << endl;
     }
     if (event & UPDATE) {
         // Depois da proxima ser definida e avisada de sua entrada, podemos desproteger as recem entradas
@@ -434,16 +434,16 @@ void GEAMQ::handle(Event event) {
     // Quando uma thread periodica começa a tarefa
     if (periodic() && (event & ENTER)) {
         // db<GEAMQ>(INF) << "ENTER !!" << endl;
-        _personal_statistics.job_enter_tick = elapsed();
-        for (int q = 0; q < QUEUES; q++) {
-            db<GEAMQ>(TRC) << "CPU " << CPU::id() << " Fila " << q << " Tamanho  " <<  Thread::scheduler()->size(q) << " ";
-            for (Thread* t = Thread::scheduler()->tail(q)->object(); t != nullptr; t = t->link()->prev()->object()) { 
-                db<GEAMQ>(TRC) << t << " ";
-            }
-            db<GEAMQ>(TRC) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q)->object();
-        db<GEAMQ>(TRC) << endl;
-        }
-        db<GEAMQ>(TRC) << endl;
+        // _personal_statistics.job_enter_tick = elapsed();
+        // for (int q = 0; q < QUEUES; q++) {
+        //     db<GEAMQ>(TRC) << "CPU " << CPU::id() << " Fila " << q << " Tamanho  " <<  Thread::scheduler()->size(q) << " ";
+        //     for (Thread* t = Thread::scheduler()->tail(q)->object(); t != nullptr; t = t->link()->prev()->object()) { 
+        //         db<GEAMQ>(TRC) << t << " ";
+        //     }
+        //     db<GEAMQ>(TRC) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q)->object();
+        // db<GEAMQ>(TRC) << endl;
+        // }
+        // db<GEAMQ>(TRC) << endl;
     }
     // Quando uma thread foi liberado para executar tarefa
     if (periodic() && (event & JOB_RELEASE)) {
@@ -457,12 +457,17 @@ void GEAMQ::handle(Event event) {
         for (auto it = Thread::scheduler()->begin(current_queue()); it != Thread::scheduler()->end(current_queue()); ++it) {
             if (!it->object()->criterion().periodic()) break;
             
-            unsigned new_rank = it->rank() - (_personal_statistics.average_et[it->object()->criterion().current_queue()] + Thread::scheduler()->chosen()->priority());
+            unsigned new_rank = it->rank()
+                                    - (_personal_statistics.average_et[it->object()->criterion().current_queue()] 
+                                        + Thread::scheduler()->chosen()->priority());
             it->rank(new_rank);
         }
         // mais uma execução para cobrir o ultimo elemento da fila (fizemos uma bagunca com os end's e begin's possivelmente)
         if ( Thread::scheduler()->end(current_queue()) && Thread::scheduler()->end(current_queue())->object()->criterion().periodic() ) {
-            unsigned new_rank = Thread::scheduler()->end(current_queue())->rank() + (_personal_statistics.average_et[Thread::scheduler()->end(current_queue())->object()->criterion().current_queue()] + Thread::scheduler()->chosen()->priority());
+            unsigned new_rank = Thread::scheduler()->end(current_queue())->rank() 
+                                    + (_personal_statistics.average_et[Thread::scheduler()->end(current_queue())->object()->criterion().current_queue()] 
+                                        + Thread::scheduler()->chosen()->priority());
+                                        
             Thread::scheduler()->end(current_queue())->rank(new_rank);
         }
 
@@ -489,7 +494,20 @@ void GEAMQ::handle(Event event) {
             _behind_of->link()->prev()->object()->for_all_behind(ASSURE_BEHIND);
         }
     }
-
+    if (event & CHARGE) {
+        //db<GEAMQ>(INF) << "ENTER !!" << endl;
+        // _personal_statistics.job_enter_tick = elapsed();
+        // for (int q = 0; q < QUEUES; q++) {
+        //     db<GEAMQ>(WRN) << " Fila " << q << " Tamanho  " <<  Thread::scheduler()->size(q) << " ";
+        //     for (Thread* t = Thread::scheduler()->tail(q)->object(); t != nullptr; t = t->link()->prev()->object()) { 
+        //         db<GEAMQ>(WRN) << t << " ";
+        //     }
+        //     db<GEAMQ>(WRN) << endl;
+        //     db<GEAMQ>(WRN) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q)->object();
+        // db<GEAMQ>(WRN) << endl;
+        // }
+        // db<GEAMQ>(WRN) << endl;
+    }
     /* a = new Job()        -> JOB_RELEASE, CREATE
      * [b] premptado por [a] -> ENTER (a), LEAVE (b)
      * a acabou tarefa :(    -> JOB_FINISH
@@ -561,11 +579,17 @@ int GEAMQ::rank_eamq() {
             t_fitted_capacity_remaining = t_fitted->criterion().personal_statistics().remaining_et[i];
         }
 
-        ///////////////// P3TEST - soma aqui o t_chosen_capacity /////////////////
+        // Calculo de slack
+        // tempo de espera = tempo de espera por RP + tempo de espera da thread da frente + tempo de execução de thread da frente
+        // tempo para execução = deadline - tempo de espera 
+        // slack = tempo para execução - tempo de execução estimativa 
         int cwt_profile = rp_waiting_time + (t_fitted ? t_fitted->priority() + t_fitted_capacity_remaining : 0);
         int available_time_to_run = _personal_statistics.remaining_deadline - cwt_profile;
         int idle_time = available_time_to_run - eet_remaining;
-        db<GEAMQ>(TRC) << "CWT: " << cwt_profile << ", Time to run: " << available_time_to_run << ", IDLE time: " << idle_time << endl;
+        db<GEAMQ>(TRC) << "CWT: " << cwt_profile 
+                        << ", Time to run: " << available_time_to_run 
+                        << ", IDLE time: " << idle_time 
+                        << endl;
 
         if (idle_time >= 0) {
             set_queue(i);
@@ -576,9 +600,11 @@ int GEAMQ::rank_eamq() {
         }
     }
     // Não encontrou lugar na fila
-    // PRECISA TRATAR !!!!
-    db<GEAMQ>(TRC) << "JOGUEI FORAAAAAAAAAa" << endl;
+    // Rever com uma análise mais severa se vale a pena ainda tentar
+    db<GEAMQ>(TRC) << "Não vai encaixar em nada, RODA EM POTENCIA MÁXIMA, talvez dê" << endl;
     db<GEAMQ>(TRC) << endl <<  endl;
+    _priority = 0;
+    set_queue(0);
 
     return 0;
 }

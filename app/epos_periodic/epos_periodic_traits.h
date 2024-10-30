@@ -20,8 +20,8 @@ struct Traits<Build> : public Traits_Tokens
 
     // Default flags
     static const bool enabled = true;
-    static const bool monitored = true;
     static const bool debugged = false;
+    static const bool monitored = true;
     static const bool hysterically_debugged = false;
 };
 
@@ -44,7 +44,7 @@ struct Traits<EAMQ> : public Traits<Build>
 template <>
 struct Traits<GEAMQ> : public Traits<Build>
 {
-    static const bool debugged = true;
+    static const bool debugged = false;
 };
 
 template <>

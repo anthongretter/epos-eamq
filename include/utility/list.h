@@ -1437,14 +1437,15 @@ public:
 
     Element *remove(Element *e)
     {
-        db<Lists>(WRN) << "Scheduling_List::remove(e=" << e
+        db<Lists>(TRC) << "Scheduling_List::remove(e=" << e
                        << ") => {p=" << (e ? e->prev() : (void *)-1)
                        << ",o=" << (e ? e->object() : (void *)-1)
                        << ",n=" << (e ? e->next() : (void *)-1)
                        << "}" << endl;
-
-        if (e == _chosen[R::current_head()])
-            _chosen[R::current_head()] = Base::remove_head();
+        db<GEAMQ>(TRC) << "REMOVENDO ELEMENTO!! -> " << e << " chosen -> " << _chosen[R::current_head()] <<  " current_head " << R::current_head() << endl;
+        if (e == _chosen[R::current_head()]) {
+            db<GEAMQ>(TRC) << "REMOVENDO CHOSEN!! -> " << _chosen[R::current_head()] << endl;
+            _chosen[R::current_head()] = Base::remove_head();}
         else
             e = Base::remove(e);
 
@@ -1588,6 +1589,7 @@ public:
 
     Element *remove(Element *e)
     {
+        db<GEAMQ>(TRC) << "e->rank().queue() " << e->rank().queue() << " current_queue " << R::current_queue() << endl;
         return _list[e->rank().queue()].remove(e);
     }
 

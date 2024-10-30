@@ -17,7 +17,8 @@ void Thread::init()
     if(smp && (CPU::id() == CPU::BSP))
         IC::int_vector(IC::INT_RESCHEDULER, rescheduler);  // if an eoi handler is needed, then it was already installed at IC::init()
 
-    // P3 - espera todos cores para não ativar interrupção de rescheduler antes de BSP configurar interrupção
+    // P3 - espera todos cores para não ativar interrupção de rescheduler
+    // antes de BSP configurar interrupção
     CPU::smp_barrier();
 
     if(smp)
@@ -33,12 +34,8 @@ void Thread::init()
         Main * main = reinterpret_cast<Main *>(__epos_app_entry);
         
         new (SYSTEM) Thread(Thread::Configuration(Thread::RUNNING, Thread::MAIN), main);
-    }
-    // CPU::smp_barrier();
-
-
+    } 
     // P3 - outros cores precisa esperar BSP criar thread MAIN antes
-    // // CPU::smp_barrier();
     if (CPU::id() != CPU::BSP)
         CPU::smp_barrier();
 
@@ -47,8 +44,6 @@ void Thread::init()
 
     if (CPU::id() == CPU::BSP)
         CPU::smp_barrier();
-
-    // CPU::smp_barrier();
 
     // The installation of the scheduler timer handler does not need to be done after the
     // creation of threads, since the constructor won't call reschedule() which won't call
@@ -65,8 +60,9 @@ void Thread::init()
     CPU::smp_barrier();
 
     // Transition from CPU-based locking to thread-based locking
-    if(CPU::id() == CPU::BSP)
-        _not_booting = true;
+    // if(CPU::id() == CPU::BSP)
+    //     _not_booting = true;
+    _not_booting = true;
 }
 
 __END_SYS
