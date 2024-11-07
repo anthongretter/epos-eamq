@@ -114,6 +114,7 @@ class EDF;
 class LLF;
 class EAMQ;
 class GEAMQ;
+class PEAMQ;
 class GRR;
 class Fixed_CPU;
 class CPU_Affinity;

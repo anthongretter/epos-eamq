@@ -1279,31 +1279,41 @@ template <typename T,
           typename El = List_Elements::Doubly_Linked_Scheduling<T, R>,
           typename L = Ordered_List<T, R, El>,
           unsigned int Q = R::QUEUES>
-class Scheduling_Multilist_Single_Chosen
+class Scheduling_Multilist_Single_Chosen : private Ordered_List<T, R, El>
 {
+private:
+    typedef Ordered_List<T, R, El> Base;
 public:
     typedef T Object_Type;
     typedef R Rank_Type;
     typedef El Element;
     typedef typename L::Iterator Iterator;
 
+
 public:
     Scheduling_Multilist_Single_Chosen() { _total_size = 0; }
 
-    bool empty() const { return _list[R::current_queue()].empty(); }
+    using Base::begin;
+    using Base::empty;
+    using Base::end;
+    using Base::head;
+    using Base::size;
+    using Base::tail;
+
+    bool empty() const { return _list[R::current_queue_eamq()].empty(); }
     bool empty(unsigned int queue) { return _list[queue].empty(); }
 
-    unsigned long size() const { return _list[R::current_queue()].size(); }
+    unsigned long size() const { return _list[R::current_queue_eamq()].size(); }
     unsigned long size(unsigned int queue) const { return _list[queue].size(); }
 
     unsigned long total_size() const { return _total_size; }
 
-    Element *head() { return _list[R::current_queue()].head(); }
+    Element *head() { return _list[R::current_queue_eamq()].head(); }
     Element *head(unsigned int i) { return _list[i].head(); }
-    Element *tail() { return _list[R::current_queue()].tail(); }
+    Element *tail() { return _list[R::current_queue_eamq()].tail(); }
     Element *tail(unsigned int i) { return _list[i].tail(); }
 
-    Iterator begin() { return Iterator(_list[R::current_queue()].head()); }
+    Iterator begin() { return Iterator(_list[R::current_queue_eamq()].head()); }
     Iterator begin(unsigned int queue) { return Iterator(_list[queue].head()); }
     Iterator end() { return Iterator(0); }
     Iterator end(unsigned int queue) { return Iterator(_list[queue].tail()); }
@@ -1322,59 +1332,116 @@ public:
     void insert(Element *e)
     {
         // Se é primeiro a ser inserido -> chosen vai ser ele mesmo
+        db<PEAMQ>(WRN) << "Inserindo na fila" << e->rank().queue_eamq() << endl;
         if (_total_size == 0 ) {
             _chosen = e;
+        } else {
+            _list[e->rank().queue_eamq()].insert(e);
         }
 
-        if (_list[e->rank().queue()].empty())
+        if (_list[e->rank().queue_eamq()].empty())
         {
             _occupied_queues++;
         }
 
         // Insere o elemento na sublista especifica 
-        _list[e->rank().queue()].insert(e);
+        // _list[e->rank().queue_eamq()].insert(e);
         _total_size++;
     }
 
     Element *remove(Element *e)
     {
-        // Pagamos o preco desse if para man
-        if (e == _chosen)
-        {
-            _chosen = 0;
-        }
-
-        if (_list[e->rank().queue()].size() == 1)
+        if (_list[e->rank().queue_eamq()].size() == 0)
         {
             _occupied_queues--;
         }
-
         _total_size--;
 
-        return _list[e->rank().queue()].remove(e);
+        // Pagamos o preco desse if para man
+        if (e == _chosen)
+        {
+            _chosen = _list[R::current_queue_eamq()].remove_head();
+            return e;
+        }
+
+        return _list[e->rank().queue_eamq()].remove(e);
     }
 
     Element *choose()
     {
-        _chosen = _list[R::current_queue()].head();
+        db<PEAMQ>(WRN) << "CHOOSE" << endl;
+        // if (!empty())
+        // {
+        //     Element * tmp = _chosen;
+        //     _chosen = Base::remove_head();
+        //     Base::insert(tmp);
+        // }
+        // //db<Lists>(WRN) << "CHOOSE MULTIHEAD: " << _chosen[R::current_head()] << endl;
+        // return _chosen;
+        if (!empty())
+        {
+            Element * tmp = _chosen;
+            _chosen = _list[R::current_queue_eamq()].remove_head();
+            _list[chosen()->rank().queue_eamq()].insert(tmp);
+        }
+        //db<Lists>(WRN) << "CHOOSE MULTIHEAD: " << _chosen[R::current_head()] << endl;
         return _chosen;
+
+        // _chosen = _list[R::current_queue_eamq()].head();
+        // return _chosen;
     }
 
     // TODO: Improve this method
     Element *choose_another()
     {
-        _chosen = _list[R::current_queue()].head()->next();
+        db<PEAMQ>(WRN) << "CHOOSE ANOTHER" << endl;
+        // if (!empty() && head()->rank() != R::IDLE)
+        // {
+        //     Element *tmp = _chosen;
+        //     _chosen = Base::remove_head();
+        //     Base::insert(tmp);
+        // }
+
+        // return _chosen;
+
+        if (!empty() && head()->rank() != R::IDLE)
+        {
+            Element *tmp = _chosen;
+            _chosen = _list[R::current_queue_eamq()].remove_head();
+            _list[tmp->rank().queue_eamq()].insert(tmp);
+        }
+
         return _chosen;
+
+        // //if (chosen()->rank()->queue_eamq() != R::current_queue_eamq())
+        // _chosen = _list[R::current_queue_eamq()].head()->next();
+        // return _chosen;
     }
 
     Element *choose(Element *e)
     {   
-        _chosen = e;
+        db<PEAMQ>(WRN) << "CHOOSE P" << endl;
+        // if (e != _chosen)
+        // {
+        //     Base::insert(_chosen);
+        //     _chosen = Base::remove(e);
+        // }
+
+        // return _chosen;
+        if (e != _chosen)
+        {
+            _list[chosen()->rank().queue_eamq()].insert(_chosen);
+            _chosen = _list[e->rank().queue_eamq()].remove(e);
+        }
+
         return _chosen;
+        // _chosen = e;
+        // return _chosen;
     }
 
 private:
     L _list[Q];
+    // using Base::remove;
     unsigned int _total_size;
     unsigned int _occupied_queues; 
     Element *volatile _chosen;
@@ -1442,12 +1509,15 @@ public:
                        << ",o=" << (e ? e->object() : (void *)-1)
                        << ",n=" << (e ? e->next() : (void *)-1)
                        << "}" << endl;
-        db<GEAMQ>(TRC) << "REMOVENDO ELEMENTO!! -> " << e << " chosen -> " << _chosen[R::current_head()] <<  " current_head " << R::current_head() << endl;
+        //db<GEAMQ>(WRN) << "TENTANTO REMOVER DO CPU" << R::current_head() << endl;
         if (e == _chosen[R::current_head()]) {
-            db<GEAMQ>(TRC) << "REMOVENDO CHOSEN!! -> " << _chosen[R::current_head()] << endl;
-            _chosen[R::current_head()] = Base::remove_head();}
-        else
-            e = Base::remove(e);
+            //db<GEAMQ>(WRN) << "REMOVENDO CHOSEN!! -> " << _chosen[R::current_head()] << endl;
+            _chosen[R::current_head()] = Base::remove_head();
+            //db<GEAMQ>(WRN) << "CHOSEN NOVO-> " << _chosen[R::current_head()] << endl;
+            }
+        else {
+            //db<GEAMQ>(WRN) << "REMOVENDO DA LISTA??" << endl;
+            e = Base::remove(e);}
 
         return e;
     }
@@ -1647,6 +1717,172 @@ template <typename T,
 class Multihead_Scheduling_Multilist : public Scheduling_Multilist<T, R, El, Multihead_Scheduling_List<T, R, El, H>, Q>
 {
 };
+
+
+// // Estrutura nova para multicore particionado 
+// template <typename T,
+//           typename PR = typename T::Criterion,
+//           typename R = typename T::Criterion,
+//           typename E = List_Elements::Doubly_Linked_Scheduling<T, PR>,
+//           typename El = List_Elements::Doubly_Linked_Scheduling<T, R>,
+//           unsigned int Q = R::QUEUES,
+//           unsigned int QM = PR::QUEUES_CORES,
+//           typename LI = Scheduling_List<T, R, El>,
+//           typename L = Scheduling_Multilist_Single_Chosen<T, R, El, LI, Q>>
+// class Multilist_Scheduling_Multilist : public Scheduling_Multilist<T, PR, E, L, QM>
+// {
+// public:
+//     typedef T Object_Type;
+//     typedef R Rank_Type;
+//     typedef El Element;
+//     typedef typename L::Iterator Iterator;
+
+// public:
+//     Element *choose()
+//     {
+//         if (_list[R::current_queue()].chosen()->rank().queue() != R::current_queue())
+//         {
+//             insert(_list[R::current_queue()].chosen());
+//             _list[R::current_queue()].chosen(_list[R::current_queue()][PR::current_queue_eamq()].remove());
+//         }
+//         //db<Lists>(WRN) << "CHOOSE MULTILIST - current queue: " << R::current_queue() << endl;
+
+//         return _list[R::current_queue()].choose();
+//     }
+
+//     Element *choose_another()
+//     {
+//         if (_list[R::current_queue()].chosen()->rank().queue() != R::current_queue())
+//         {
+//             insert(_list[R::current_queue()].chosen());
+//             _list[R::current_queue()].chosen(_list[R::current_queue()][PR::current_queue_eamq()].remove());
+//         }
+
+//         return _list[R::current_queue()].choose_another();
+//     }
+
+//     Element *choose(Element *e)
+//     {
+//         if (_list[R::current_queue()].chosen()->rank().queue() != R::current_queue())
+//         {
+//             insert(_list[R::current_queue()].chosen());
+//             _list[R::current_queue()].chosen(_list[R::current_queue()][PR::current_queue_eamq()].remove());
+//         }
+
+//         return _list[e->rank().queue()].choose(e);
+//     }
+
+// private:
+//     L _list[QM];
+// };
+
+// Estrutura nova para multicore particionado 
+template <typename T,
+          typename R = typename T::Criterion,
+          typename El = List_Elements::Doubly_Linked_Scheduling<T, R>,
+          unsigned int Q = R::QUEUES,
+          unsigned int QM = R::QUEUES_CORES,
+          typename LI = Ordered_List<T, R, El>,
+          typename L = Scheduling_Multilist_Single_Chosen<T, R, El, LI, Q>>
+class Multilist_Scheduling_Multilist
+{
+public:
+    typedef T Object_Type;
+    typedef R Rank_Type;
+    typedef El Element;
+    typedef typename L::Iterator Iterator;
+
+public:
+    Multilist_Scheduling_Multilist() {}
+
+    bool empty() const { return _list[R::current_queue()].empty(); }
+    bool empty(unsigned int queue) { return _list[queue].empty(); }
+
+    unsigned long size() const { return _list[R::current_queue()].size(); }
+    unsigned long size(unsigned int queue) const { return _list[queue].size(); }
+
+    unsigned long total_size() const
+    {
+        unsigned long s = 0;
+        for (unsigned int i = 0; i < QM; i++)
+            s += _list[i].size();
+        return s;
+    }
+
+    Element *head() { return _list[R::current_queue()].head(); }
+    Element *head(unsigned int i) { return _list[i].head(); }
+    Element *tail() { return _list[R::current_queue()].tail(); }
+    Element *tail(unsigned int i) { return _list[i].tail(); }
+
+    Iterator begin() { return Iterator(_list[R::current_queue()].head()); }
+    Iterator begin(unsigned int queue) { return Iterator(_list[queue].head()); }
+    Iterator end() { return Iterator(0); }
+    Iterator end(unsigned int queue) { return Iterator(_list[queue].tail()); }
+
+    // Quantidade de filas ocupadas em determinado momento baseado em seu próprio chosen / fila com threads
+    // Usado em round_profile, não liga para threads escolhidas por outros cores
+    const int occupied_queues() { 
+        int count = 0;
+        for (unsigned int i = 0; i < QM; i++) {
+            if (_list[i].chosen() || !_list[i].empty()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    Element *volatile &chosen()
+    {
+        //db<Lists>(WRN) << "Pegando CHOSEN da fila" << R::current_queue() << " : " << _list[R::current_queue()].chosen() << endl;
+        return _list[R::current_queue()].chosen();
+    }
+    
+    Element *volatile &chosen(unsigned int queue)
+    {
+        return _list[queue].chosen();
+    }
+
+    // workaround para escolher o chosen sem passar
+    Element *volatile &chosen_now(unsigned int queue)
+    {
+        return _list[queue].chosen();
+    }
+
+    void insert(Element *e)
+    {
+        // if (_list[e->rank().queue()].empty() && e->rank() != -1) {
+        //     _list[e->rank().queue()].insert_bruh(e);
+        // }
+        db<PEAMQ>(WRN) << "Inserindo no core" << e->rank().queue() << endl;
+        _list[e->rank().queue()].insert(e);
+    }
+
+    Element *remove(Element *e)
+    {
+        db<GEAMQ>(TRC) << "e->rank().queue() " << e->rank().queue() << " current_queue " << R::current_queue() << endl;
+        return _list[e->rank().queue()].remove(e);
+    }
+
+    Element *choose()
+    {
+        return _list[R::current_queue()].choose();
+    }
+
+    Element *choose_another()
+    {
+        return _list[R::current_queue()].choose_another();
+    }
+
+    Element *choose(Element *e)
+    {
+        return _list[e->rank().queue()].choose(e);
+    }
+
+private:
+    L _list[QM];
+};
+
+
 
 // Doubly-Linked, Grouping List
 template <typename T,

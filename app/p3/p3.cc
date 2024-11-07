@@ -11,7 +11,7 @@ OStream cout;
 int bruh(int n)
 {
     cout << "CPU: " << CPU::id() << " bruh - " << n << endl;
-    Alarm::delay(50000);
+    //Alarm::delay(50000);
     return 0;
 }
 
@@ -19,7 +19,7 @@ int poggers(int n)
 {
     do {
         cout << "CPU: " << CPU::id() << " poggers - " << n << endl;
-        Alarm::delay(50000);
+        //Alarm::delay(50000);
     } while (Periodic_Thread::wait_next());
     return 0;
 }

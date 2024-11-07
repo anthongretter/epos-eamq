@@ -100,10 +100,12 @@ EAMQ::EAMQ(int p) : RT_Common(p), _is_recent_insertion(false), _personal_statist
     // Coloca thread MAIN e IDLE na mesma fila (fila com menor frequência possível)
     // prioridade igual a LOW ou mais baixos
     if (p == MAIN || p == IDLE || p >= LOW) {
-        _queue = QUEUES - 1;
+        if (p == MAIN) {db<PEAMQ>(WRN) << "CRIOU MAIN" << endl;}
+        if (p == IDLE) {db<PEAMQ>(WRN) << "CRIOU IDLE" << endl;}
+        _queue_eamq = QUEUES - 1;
     } else {
         // Se a prioridade é NORMAL ou HIGH (p < LOW)
-        _queue = QUEUES - 2;
+        _queue_eamq = QUEUES - 2;
     }
     
 }
@@ -112,7 +114,7 @@ EAMQ::EAMQ(int p) : RT_Common(p), _is_recent_insertion(false), _personal_statist
 EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c) : RT_Common(PERIODIC, p, d, c), _is_recent_insertion(false), _personal_statistics{}, _behind_of(nullptr)
 {
 
-    db<EAMQ>(TRC) << "ranking with p: " << p << endl;
+    db<PEAMQ>(WRN) << "ranking with p: " << p << endl;
     d = (d ? d : p);
 
     //int unsigned rand = 3u + (unsigned(Random::random()) % 8u);
@@ -128,31 +130,33 @@ EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c) : RT_Common(PERIODIC, p,
     }
 
     rank_eamq();
-    db<EAMQ>(TRC) << "ranked with: " << _priority << " on queue: " << _queue << endl;
+    db<EAMQ>(TRC) << "ranked with: " << _priority << " on queue: " << _queue_eamq << endl;
 }
 
 void EAMQ::handle(Event event) {
     // Antes de toda troca de threads (choose / chosen) precisa-se avancar 
     // o ponteiro da fila de escolha 
     if (event & CHANGE_QUEUE) {
-        unsigned int last = current_queue();
-        db<Thread>(WRN) << "CPU " << CPU::id() << " Last Queue: " << last << endl;
+        unsigned int last = current_queue_eamq();
         do {
             // Pula para próxima fila
             EAMQ::next_queue();
         // Enquanto fila atual não vazia ou uma volta completa
-        } while (Thread::scheduler()->empty(current_queue()) && (current_queue() != last));
+        } while (Thread::scheduler()->empty() && (current_queue_eamq() != last));
+        db<PEAMQ>(WRN) << "CPU " << CPU::id() << " prox: " << current_queue_eamq() << endl;
 
         // Ajustando a frequência conforme a fila
-        Hertz f = frequency_within(current_queue());
+        Hertz f = frequency_within(current_queue_eamq());
         CPU::clock(f);
         
         // So that IDLE doesnt spam this
-        if (last != current_queue()) {
-            db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue() << endl;
+        if (last != current_queue_eamq()) {
+            db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue_eamq() << endl;
         }
+        db<PEAMQ>(WRN) << "HEAD: " << Thread::scheduler()->head()->object() << ", TAIL: " << Thread::scheduler()->tail()->object() << endl;
     }
     if (event & CREATE) {
+        db<PEAMQ>(WRN) << "CRIANDO THREAD" << endl;
         // for (int q = 0; q < QUEUES; q++) {
         //     db<EAMQ>(WRN) << "CPU " << CPU::id() << " Fila " << q << ": ";
         //     for (auto it = Thread::scheduler()->end(q); &(*it) != nullptr; it = it->prev()) {
@@ -161,8 +165,17 @@ void EAMQ::handle(Event event) {
         //     db<EAMQ>(WRN) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q);
         // db<EAMQ>(WRN) << endl;
         // }
+
+        // db<PEAMQ>(WRN) << Thread::scheduler()->occupied_queues() << endl;
+        // for (unsigned long q = 0; q < QUEUES; q++) {
+        //     db<PEAMQ>(WRN) << "Chosen: " << Thread::scheduler()->chosen_now(q) << endl;
+        //     db<PEAMQ>(WRN) << "Core" << q << " tem " << Thread::scheduler()->size(q) << endl;
+        // }
+        // db<PEAMQ>(WRN) << endl;
+
     }
     if (event & UPDATE) {
+        db<PEAMQ>(WRN) << "UPDATE" <<endl;
         // Depois da proxima ser definida e avisada de sua entrada, podemos desproteger as recem entradas
         // Todas as threads recebem um evento UPDATE
         _is_recent_insertion = false;
@@ -180,6 +193,7 @@ void EAMQ::handle(Event event) {
         }
     }
     if (periodic() && (event & CREATE)) {
+        db<PEAMQ>(WRN) << "CRIANDO" <<endl;
         // Se foi inserido no meio da fila (ou seja, se tem t_fitted)
         if (_behind_of) {
             // Faz atualização de rank da thread que foi inserida chamando assure_behind
@@ -187,13 +201,14 @@ void EAMQ::handle(Event event) {
         }
     }
     if (periodic() && (event & LEAVE)) {
+        db<PEAMQ>(WRN) << "LEAVE" <<endl;
         // Guarda o tempo que passou depois que começou a execução da tarefa
         Microsecond in_cpu = time(elapsed() - _personal_statistics.job_enter_tick);
         _personal_statistics.job_execution_time += in_cpu;
         for (unsigned int q = 0; q < QUEUES; q++)
         {
             // Reduz o tempo executado deste quantum, transformando Tick em Microsecond
-            Microsecond executed_in_profile = Timer_Common::sim(in_cpu, frequency_within(_queue), frequency_within(q));
+            Microsecond executed_in_profile = Timer_Common::sim(in_cpu, frequency_within(_queue_eamq), frequency_within(q));
             if (executed_in_profile > _personal_statistics.remaining_et[q]) {
                 // underflow
                 _personal_statistics.remaining_et[q] = 0;
@@ -204,22 +219,25 @@ void EAMQ::handle(Event event) {
     }
     // Quando uma thread periodica começa a tarefa
     if (periodic() && (event & ENTER)) {
+        db<PEAMQ>(WRN) << "ENTER" <<endl;
         _personal_statistics.job_enter_tick = elapsed();
     }
     // Quando uma thread foi liberado para executar tarefa
     if (periodic() && (event & JOB_RELEASE)) {
+        db<PEAMQ>(WRN) << "RELEASE" <<endl;
         _personal_statistics.job_execution_time = 0;
         rank_eamq();
     }
     // Quando uma thread periodica termina tarefa
     if (periodic() && (event & JOB_FINISH)) {
-        for (auto it = Thread::scheduler()->begin(current_queue()); it != Thread::scheduler()->end(current_queue()); ++it) {
-            unsigned new_rank = it->rank() - (_personal_statistics.average_et[it->object()->criterion().current_queue()] + Thread::scheduler()->chosen()->priority());
+        db<PEAMQ>(WRN) << "FINISH" <<endl;
+        for (auto it = Thread::scheduler()->begin(); it != Thread::scheduler()->end(); ++it) {
+            unsigned new_rank = it->rank() - (_personal_statistics.average_et[it->object()->criterion().current_queue_eamq()] + Thread::scheduler()->chosen()->priority());
             it->rank(new_rank);
         }
-        if ( Thread::scheduler()->end(current_queue())) {
-            unsigned new_rank = Thread::scheduler()->end(current_queue())->rank() + (_personal_statistics.average_et[Thread::scheduler()->end(current_queue())->object()->criterion().current_queue()] + Thread::scheduler()->chosen()->priority());
-            Thread::scheduler()->end(current_queue())->rank(new_rank);
+        if ( Thread::scheduler()->end()) {
+            unsigned new_rank = Thread::scheduler()->end()->rank() + (_personal_statistics.average_et[Thread::scheduler()->end(current_queue_eamq())->object()->criterion().current_queue_eamq()] + Thread::scheduler()->chosen()->priority());
+            Thread::scheduler()->end()->rank(new_rank);
         }
 
         
@@ -228,7 +246,7 @@ void EAMQ::handle(Event event) {
             // (tempo de execução anterior + tempo de execução atual) / 2
             _personal_statistics.average_et[q] = (_personal_statistics.average_et[q] + _personal_statistics.job_execution_time) / 2;
             // Atualiza EET da tarefa para cada fila (relativo a frequência)
-            _personal_statistics.job_estimated_et[q] = Timer_Common::sim(_personal_statistics.average_et[q], frequency_within(_queue), frequency_within(q));
+            _personal_statistics.job_estimated_et[q] = Timer_Common::sim(_personal_statistics.average_et[q], frequency_within(_queue_eamq), frequency_within(q));
             // Timer_Common::time(_personal_statistics.average_et[q], frequency_within(q));
         }
         _personal_statistics.job_execution_time = 0;
@@ -422,7 +440,7 @@ void GEAMQ::handle(Event event) {
         for (unsigned int q = 0; q < QUEUES; q++)
         {
             // Reduz o tempo executado deste quantum, transformando Tick em Microsecond
-            Microsecond executed_in_profile = Timer_Common::sim(in_cpu, frequency_within(_queue), frequency_within(q));
+            Microsecond executed_in_profile = Timer_Common::sim(in_cpu, frequency_within(_queue_eamq), frequency_within(q));
             if (executed_in_profile > _personal_statistics.remaining_et[q]) {
                 // underflow
                 _personal_statistics.remaining_et[q] = 0;
@@ -433,17 +451,20 @@ void GEAMQ::handle(Event event) {
     }
     // Quando uma thread periodica começa a tarefa
     if (periodic() && (event & ENTER)) {
-        // db<GEAMQ>(INF) << "ENTER !!" << endl;
-        // _personal_statistics.job_enter_tick = elapsed();
+        _personal_statistics.job_enter_tick = elapsed();
+
+        // int count = 5;
         // for (int q = 0; q < QUEUES; q++) {
-        //     db<GEAMQ>(TRC) << "CPU " << CPU::id() << " Fila " << q << " Tamanho  " <<  Thread::scheduler()->size(q) << " ";
+        //     db<GEAMQ>(WRN) << "CPU " << CPU::id() << " Fila " << q << " Tamanho  " <<  Thread::scheduler()->size(q) << " ";
         //     for (Thread* t = Thread::scheduler()->tail(q)->object(); t != nullptr; t = t->link()->prev()->object()) { 
-        //         db<GEAMQ>(TRC) << t << " ";
+        //         db<GEAMQ>(WRN) << t->link() << " ";
+        //         count--;
         //     }
-        //     db<GEAMQ>(TRC) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q)->object();
-        // db<GEAMQ>(TRC) << endl;
+        //     count = 5;
+        //     db<GEAMQ>(WRN) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q);
+        // db<GEAMQ>(WRN) << endl;
         // }
-        // db<GEAMQ>(TRC) << endl;
+        // db<GEAMQ>(WRN) << endl;
     }
     // Quando uma thread foi liberado para executar tarefa
     if (periodic() && (event & JOB_RELEASE)) {
@@ -477,7 +498,7 @@ void GEAMQ::handle(Event event) {
             // (tempo de execução anterior + tempo de execução atual) / 2
             _personal_statistics.average_et[q] = (_personal_statistics.average_et[q] + _personal_statistics.job_execution_time) / 2;
             // Atualiza EET da tarefa para cada fila (relativo a frequência)
-            _personal_statistics.job_estimated_et[q] = Timer_Common::sim(_personal_statistics.average_et[q], frequency_within(_queue), frequency_within(q));
+            _personal_statistics.job_estimated_et[q] = Timer_Common::sim(_personal_statistics.average_et[q], frequency_within(_queue_eamq), frequency_within(q));
             // Timer_Common::time(_personal_statistics.average_et[q], frequency_within(q));
         }
         _personal_statistics.job_execution_time = 0;
@@ -495,15 +516,13 @@ void GEAMQ::handle(Event event) {
         }
     }
     if (event & CHARGE) {
-        //db<GEAMQ>(INF) << "ENTER !!" << endl;
-        // _personal_statistics.job_enter_tick = elapsed();
         // for (int q = 0; q < QUEUES; q++) {
         //     db<GEAMQ>(WRN) << " Fila " << q << " Tamanho  " <<  Thread::scheduler()->size(q) << " ";
         //     for (Thread* t = Thread::scheduler()->tail(q)->object(); t != nullptr; t = t->link()->prev()->object()) { 
-        //         db<GEAMQ>(WRN) << t << " ";
+        //         db<GEAMQ>(WRN) << t->link() << " ";
         //     }
         //     db<GEAMQ>(WRN) << endl;
-        //     db<GEAMQ>(WRN) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q)->object();
+        //     db<GEAMQ>(WRN) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q);
         // db<GEAMQ>(WRN) << endl;
         // }
         // db<GEAMQ>(WRN) << endl;

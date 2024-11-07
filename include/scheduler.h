@@ -394,13 +394,13 @@ public:
     void is_recent_insertion(bool b) { _is_recent_insertion = b; }
 
     int rank_eamq();
-    const volatile unsigned int &queue() const volatile { return _queue; } // returns the Thread's queue
+    const volatile unsigned int &queue_eamq() const volatile { return _queue_eamq; } // returns the Thread's queue
 
-    static const volatile unsigned int &current_queue() {return _current_queue;} // current global queue
+    static const volatile unsigned int &current_queue_eamq() {return _current_queue;} // current global queue
     virtual void next_queue() { ++_current_queue %= QUEUES;}        // points to next global queue with threads
 
 protected:    
-    void set_queue(unsigned int q) { _queue = q; };
+    void set_queue(unsigned int q) { _queue_eamq = q; };
 
     /* Em caso de 4 filas em relacao a frequencia maxima:
      *   0 -> 100%
@@ -426,7 +426,7 @@ protected:
 
 
 protected:
-    volatile unsigned int _queue;
+    volatile unsigned int _queue_eamq;
     bool _is_recent_insertion;
     Personal_Statistics _personal_statistics;
     Thread *_behind_of;
@@ -444,7 +444,7 @@ public:
     GEAMQ(int p = APERIODIC): EAMQ(p) {initialize_current_queue();}
     GEAMQ(const Microsecond p, const Microsecond d = SAME, const Microsecond c = UNKNOWN): EAMQ(p, d, c) {}
     
-    using EAMQ::queue;
+    using EAMQ::queue_eamq;
     
 protected:
     static volatile unsigned int _current_queue[HEADS];
@@ -472,9 +472,27 @@ public:
 
 };
 
+class PEAMQ : public EAMQ, public Variable_Queue_Scheduler
+{
+public: 
+    static const unsigned int QUEUES_CORES = Traits<Machine>::CPUS;
+
+    PEAMQ(int p = APERIODIC)
+    : EAMQ(p), Variable_Queue_Scheduler(((_priority == IDLE) || (_priority == MAIN)) ? CPU::id() : 0) {}
+    PEAMQ(const Microsecond & p, const Microsecond & d = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY)
+    : EAMQ(p, d, c), Variable_Queue_Scheduler((cpu != ANY) ? cpu : ++_next_queue %= CPU::cores()) {}
+
+    using Variable_Queue_Scheduler::queue;
+    static unsigned int current_queue() { return CPU::id(); }
+
+};
+
 __END_SYS
 
 __BEGIN_UTIL
+
+template<typename T>
+class Scheduling_Queue<T, PEAMQ> : public Multilist_Scheduling_Multilist<T>{};
 
 // P3TEST - usando multihead multilist
 template <typename T>

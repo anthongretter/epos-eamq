@@ -157,7 +157,7 @@ int Thread::join()
         prev->criterion().handle(EAMQ::CHANGE_QUEUE);
         Thread *next = _scheduler.chosen();
 
-        db<Thread>(WRN) << "PROXIMO THREAD: " << next->link() << endl;
+        //db<PEAMQ>(WRN) << "PROXIMO THREAD: " << next->link() << endl;
 
         dispatch(prev, next);
     }
@@ -171,6 +171,7 @@ void Thread::pass()
 {
     lock();
 
+    
     db<Thread>(TRC) << "Thread::pass(this=" << this << ")" << endl;
 
     Thread *prev = running();
@@ -238,7 +239,11 @@ void Thread::yield()
     db<Thread>(TRC) << "Thread::yield(running=" << running() << ")" << endl;
 
     Thread *prev = running();
+    // P4 - Acho que precisa disso 
+    // prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread *next = _scheduler.choose_another();
+
+    db<PEAMQ>(WRN) << "YIELD"<< endl;
 
     dispatch(prev, next);
 
@@ -252,6 +257,8 @@ void Thread::exit(int status)
     db<Thread>(TRC) << "Thread::exit(status=" << status << ") [running=" << running() << "]" << endl;
 
     Thread *prev = running();
+    db<PEAMQ>(WRN) << "EXIT " << prev << endl;
+    db<PEAMQ>(WRN) << "CAB: " << _scheduler.head()->object() << ", CAU: " << _scheduler.tail()->object() << endl;
     _scheduler.remove(prev);
     prev->_state = FINISHING;
     *reinterpret_cast<int *>(prev->_stack) = status;
@@ -267,10 +274,9 @@ void Thread::exit(int status)
         prev->_joining = 0;
     }
 
-    db<Thread>(WRN) << "EXIT prev " << prev << endl;
     prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread *next = _scheduler.choose(); // at least idle will always be there
-
+    db<PEAMQ>(WRN) << "NEXT: " << next << endl;
     dispatch(prev, next);
 
     unlock();
@@ -279,6 +285,7 @@ void Thread::exit(int status)
 void Thread::sleep(Queue *q)
 {
     assert(locked()); // locking handled by caller
+    db<PEAMQ>(WRN) << "AAAAAAA"<< endl;
 
     db<GEAMQ>(TRC) << endl<< "Thread::sleep(running=" << running() << ",q=" << q<< ")" << endl;
     
@@ -290,7 +297,10 @@ void Thread::sleep(Queue *q)
 
     prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread *next = _scheduler.chosen();
-    //db<GEAMQ>(WRN) << "PREV: " << prev << ", NEXT: "<< next << endl;
+    //db<PEAMQ>(WRN) << "PREV: " << prev->link() << ", NEXT: "<< next->link() << endl;
+    if (next == nullptr) {
+        db<GEAMQ>(WRN) << "TAMANHO DA FILA"<< GEAMQ::current_queue() << ": " << _scheduler.size(GEAMQ::current_queue())<< endl;
+    }
 
     dispatch(prev, next);
 
@@ -360,10 +370,10 @@ void Thread::reschedule()
     Thread *prev = running();
     //db<Thread>(WRN) << "Thread PREV: " << prev->link() << endl;
     // Atualiza current_queue para proxima fila (next tem que ser thread da proxima fila)
-    // db<GEAMQ>(WRN) << "RESCHEDULE prev: " << prev << endl;
+    db<PEAMQ>(WRN) << "RESCHEDULE prev: " << prev << endl;
     prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread *next = _scheduler.choose();
-    //db<Thread>(WRN) << "Thread NEXT: " << next->link() << endl;
+    db<PEAMQ>(WRN) << "!!Thread NEXT: " << next << endl;
     dispatch(prev, next);
 }
 
@@ -411,11 +421,12 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
             next->criterion().handle(Criterion::AWARD | Criterion::ENTER);
         }
 
-        if (prev->_state == RUNNING)
-            prev->_state = READY;
+        if (prev->_state == RUNNING) {
+            db<PEAMQ>(WRN) << "DEIXA READY" << endl;
+            prev->_state = READY;}
         next->_state = RUNNING;
 
-        db<Thread>(TRC) << "Thread::dispatch(prev=" << prev << ",next=" << next << ")" << endl;
+        db<PEAMQ>(WRN) << "Thread::dispatch(prev=" << prev << ",next=" << next << ")" << endl;
         if (Traits<Thread>::debugged && Traits<Debug>::info)
         {
             CPU::Context tmp;
