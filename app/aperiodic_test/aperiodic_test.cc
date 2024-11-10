@@ -8,39 +8,48 @@ using namespace EPOS;
 
 OStream cout;
 
-const int N_THREADS_A = 64; // Aperiodic
+const int N_THREADS_A = 16; // Aperiodic
+const int SEARCH_N = 1000;
 
-int isPrime(const int n) {
-  bool is_prime = true;
+int primes_found = 0;
+Semaphore m;
+
+
+bool isPrime(const int n) {
 
   // 0 and 1 are not prime numbers
-  if (n == 0 || n == 1) {
-    is_prime = false;
+  if (n == 1) {
+    return false;
   }
 
   // loop to check if n is prime
-  for (int i = 2; i <= n/2; ++i) {
+  for (int i = 2; i*i <= n; i++) {
     if (n % i == 0) {
-      is_prime = false;
-      break;
+      return false;
     }
   }
 
-  if (is_prime)
-    cout << " found a prime number " << n << endl;
-
-  return 0;
+  return true;
 }
 
-int work(int n)
+
+int work(int t, int begin, int end)
 {
-    cout << "WORK: Hello world! " << n << endl;
-    for (int i = 0; i < 1000; i++)
+    // cout << "WORK " << t << ": Hello! " << "I will search " << begin << " - " << end << endl;
+
+    int found = 0;
+    for (int i = begin; i <= end; i++)
     {
-        isPrime(i);
+        found += int(isPrime(i));
     }
 
-    cout << "WORK: Bye world! " << n << endl;
+    if (found) {
+      m.p();
+      primes_found += found;
+      m.v();
+    }
+
+    // cout << "WORK " << t << ": Bye! " << "I found " << found << " primes!" << endl;
     return 0;
 }
 
@@ -48,22 +57,35 @@ int work(int n)
 int main()
 {
     cout << "MAIN: Hello world!" << endl;
+    cout << "MAIN: Searching number of primes in between 0 - " << SEARCH_N << "\n" << endl;
 
     const Thread::Criterion CRITS[3]{Thread::LOW, Thread::NORMAL, Thread::HIGH};
 
 
     Thread *ts[N_THREADS_A];
+    int search_range = (SEARCH_N + (N_THREADS_A - 1)) / N_THREADS_A;
+    int start = 1;
 
-    for (int i = 0; i < N_THREADS_A; i++)
+    int i = 0;
+    for (; i < N_THREADS_A; i++)
     {
-        // Thread aperiódica
-        ts[i] = new Thread(Thread::Configuration(Thread::READY, CRITS[i % 3]), &work, i);
+        if (start >= SEARCH_N) break;
+
+        int end = (start + search_range) < SEARCH_N 
+                      ? start + search_range
+                      : SEARCH_N;
+
+        auto conf = Thread::Configuration(Thread::READY, CRITS[i % 3]);
+        ts[i] = new Thread(conf, &work, i, start, end);
+        start += search_range + 1;
     }
 
-    for (int i = 0; i < N_THREADS_A; i++) {
-        ts[i]->join();
+    for (int j = 0; j < i; j++) {
+        ts[j]->join();
     }
-    cout << "System is going down!" << endl;
+
+    cout << "\nMAIN: We found " << primes_found << " prime numbers!" << endl;
+    cout << "MAIN: Test is going down!" << endl;
 
     return 0;
 }
