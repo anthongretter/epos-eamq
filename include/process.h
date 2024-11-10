@@ -144,7 +144,7 @@ protected:
 
     static Thread * volatile running() { 
         if (_not_booting) {
-            //db<GEAMQ>(WRN) << "AAAAAAAAA Thread::running() => " << _scheduler.chosen() << endl;
+            // db<PEAMQ>(WRN) << "AAAAAAAAA Thread::running() => " << _scheduler.chosen() << endl;
             return _scheduler.chosen();
         } else {
             //db<GEAMQ>(WRN) << "BBBBBBBBB NOT BOOTING!! " << reinterpret_cast<Thread * volatile>(CPU::id() + 1)<< endl;

@@ -1324,6 +1324,8 @@ public:
     // Se não tem _chosen -> escolhe chosen
     Element *volatile &chosen() {
         if (!_chosen) {
+            // e se não tiver nenhum elemento na fila?
+            db<PEAMQ>(WRN) << "Chosen não existe, escolhendo " << endl;
             choose();
         }
         return _chosen;
@@ -1332,66 +1334,92 @@ public:
     void insert(Element *e)
     {
         // Se é primeiro a ser inserido -> chosen vai ser ele mesmo
-        db<PEAMQ>(WRN) << "Inserindo na fila" << e->rank().queue_eamq() << endl;
-        if (_total_size == 0 ) {
+        db<PEAMQ>(WRN) << "Inserindo: " << e->object() << " na fila " << e->rank().queue_eamq() << endl;
+        if (_list[e->rank().queue_eamq()].empty() && !_chosen) {
             _chosen = e;
+            _occupied_queues++;
         } else {
             _list[e->rank().queue_eamq()].insert(e);
         }
 
-        if (_list[e->rank().queue_eamq()].empty())
-        {
-            _occupied_queues++;
-        }
-
-        // Insere o elemento na sublista especifica 
-        // _list[e->rank().queue_eamq()].insert(e);
         _total_size++;
     }
 
     Element *remove(Element *e)
     {
-        if (_list[e->rank().queue_eamq()].size() == 0)
-        {
-            _occupied_queues--;
-        }
+        db<PEAMQ>(WRN) << "REMOVENDO: " << e->object() << endl;
+        // Nós VAMOS remover, então posso diminuir aqui
         _total_size--;
 
-        // Pagamos o preco desse if para man
         if (e == _chosen)
-        {
-            _chosen = _list[R::current_queue_eamq()].remove_head();
+        {   
+            db<PEAMQ>(WRN) << "REMOVENDO O CHOSEN" << endl;
+            // Se a fila não estiver vazia
+            if (_list[R::current_queue_eamq()].size() > 0)
+            {
+                db<PEAMQ>(WRN) << "Vamos colocar alguem no chosen da fila " << R::current_queue_eamq() << endl;
+                // adicionamos o primeiro elemento para ser o chosen
+                _chosen = _list[R::current_queue_eamq()].remove_head();
+                db<PEAMQ>(WRN) << "Novo chosen: " << _chosen->object() << endl;
+            } else {
+                db<PEAMQ>(WRN) << "Fila vazia, chosen = 0" << endl;
+                // caso já não tenha ninguém naquela fila o chosen é 0
+                // temos que ver onde cada remove acontece, 
+                // pois o current_queue_eamq() PRECISA ESTAR ATUALIZADO PARA UMA FILA COM THREADS
+
+                // EM OUTRAS PALAVRAS, ESTE ELSE NUNCA DEVE SER EXECUTADO
+                _chosen = 0;
+                return e;
+            }
+            
+            // Se agora a fila ficou vazia
+            if (_list[R::current_queue_eamq()].size() == 0)
+            {
+                // diminuimos a quantidade de filas ocupadas
+                _occupied_queues--;
+            }
+
             return e;
         }
 
+        db<PEAMQ>(WRN) << "Não é chosen, tirando da fila: " << e->rank().queue_eamq() << endl;
         return _list[e->rank().queue_eamq()].remove(e);
     }
 
     Element *choose()
     {
         db<PEAMQ>(WRN) << "CHOOSE" << endl;
-        // if (!empty())
-        // {
-        //     Element * tmp = _chosen;
-        //     _chosen = Base::remove_head();
-        //     Base::insert(tmp);
-        // }
-        // //db<Lists>(WRN) << "CHOOSE MULTIHEAD: " << _chosen[R::current_head()] << endl;
-        // return _chosen;
+
+        if (empty() && !_chosen)
+        {
+            db<PEAMQ>(WRN) << "CHOOSE - NAOOOO" << endl;
+            // rezando para dar erro
+            // _chosen já é 0
+            return 0;
+        }
+
         if (!empty())
         {
-            Element * tmp = _chosen;
+            db<PEAMQ>(WRN) << "CHOOSE - Tem na fila ainda" << endl;
+            if (_chosen) {
+                Element * tmp = _chosen;
+               _list[tmp->rank().queue_eamq()].insert(tmp);
+            }
+    
+            _chosen = 0;
             _chosen = _list[R::current_queue_eamq()].remove_head();
-            _list[chosen()->rank().queue_eamq()].insert(tmp);
         }
-        //db<Lists>(WRN) << "CHOOSE MULTIHEAD: " << _chosen[R::current_head()] << endl;
+        
+        db<PEAMQ>(WRN) << "CHOOSE - Indo retornar: " << _chosen->object() << endl;
+        // caso tenha chosen e a fila vazia apenas devolve o chosen
+        // trata os dois casos
         return _chosen;
 
-        // _chosen = _list[R::current_queue_eamq()].head();
-        // return _chosen;
     }
 
     // TODO: Improve this method
+    // Caso 2 threads chamem esse método na mesma fila uma fica mandando para a outra
+    // basicamente infinitamente... não acho que dê problema em nosso caso ainda
     Element *choose_another()
     {
         db<PEAMQ>(WRN) << "CHOOSE ANOTHER" << endl;
@@ -1419,7 +1447,7 @@ public:
     }
 
     Element *choose(Element *e)
-    {   
+    {
         db<PEAMQ>(WRN) << "CHOOSE P" << endl;
         // if (e != _chosen)
         // {

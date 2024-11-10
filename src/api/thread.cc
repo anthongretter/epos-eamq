@@ -57,7 +57,12 @@ void Thread::constructor_epilogue(Log_Addr entry, unsigned int stack_size)
 
 Thread::~Thread()
 {
+    // ainda não consegui ver o destrutor funcionando nenhuma vez
+
+    db<PEAMQ>(WRN) << "Chamou o destrutor" << endl;
     lock();
+    db<PEAMQ>(WRN) << "Lockou no destrutor" << endl;
+
 
     db<Thread>(TRC) << "~Thread(this=" << this
                     << ",state=" << _state
@@ -99,6 +104,7 @@ Thread::~Thread()
         _joining->resume();
 
     unlock();
+    db<PEAMQ>(WRN) << "Unlockou no destrutor" << endl;
 
     delete _stack;
 }
@@ -253,12 +259,17 @@ void Thread::yield()
 void Thread::exit(int status)
 {
     lock();
-
-    db<Thread>(TRC) << "Thread::exit(status=" << status << ") [running=" << running() << "]" << endl;
+    // db<Thread>(TRC) << "Thread::exit(status=" << status << ") [running=" << running() << "]" << endl;
 
     Thread *prev = running();
+
     db<PEAMQ>(WRN) << "EXIT " << prev << endl;
-    db<PEAMQ>(WRN) << "CAB: " << _scheduler.head()->object() << ", CAU: " << _scheduler.tail()->object() << endl;
+    // vejam remove() da lista, nós presumimos que a fila já está atualizada
+    // caso o chosen seja removido
+    // (na prática não há diferença alguma, pois ele será reinserido,
+    // anteriormente pensei que fosse corrigir o ultimo bug que falei no whats)
+    prev->criterion().handle(EAMQ::CHANGE_QUEUE);
+
     _scheduler.remove(prev);
     prev->_state = FINISHING;
     *reinterpret_cast<int *>(prev->_stack) = status;
@@ -274,8 +285,8 @@ void Thread::exit(int status)
         prev->_joining = 0;
     }
 
-    prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread *next = _scheduler.choose(); // at least idle will always be there
+
     db<PEAMQ>(WRN) << "NEXT: " << next << endl;
     dispatch(prev, next);
 
@@ -373,7 +384,7 @@ void Thread::reschedule()
     db<PEAMQ>(WRN) << "RESCHEDULE prev: " << prev << endl;
     prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread *next = _scheduler.choose();
-    db<PEAMQ>(WRN) << "!!Thread NEXT: " << next << endl;
+    db<PEAMQ>(WRN) << "!!Thread NEXT: " << next << endl;    
     dispatch(prev, next);
 }
 

@@ -392,6 +392,7 @@ public:
 
     const bool is_recent_insertion() { return _is_recent_insertion; }
     void is_recent_insertion(bool b) { _is_recent_insertion = b; }
+    const bool periodic() { return _periodic; }
 
     int rank_eamq();
     const volatile unsigned int &queue_eamq() const volatile { return _queue_eamq; } // returns the Thread's queue
@@ -430,6 +431,7 @@ protected:
     bool _is_recent_insertion;
     Personal_Statistics _personal_statistics;
     Thread *_behind_of;
+    bool _periodic;
 
     static volatile unsigned int _current_queue; 
 };

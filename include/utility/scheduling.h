@@ -49,56 +49,56 @@ public:
     }
 
     void insert(T * obj) {
-        db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::insert(" << obj << ")" << endl;
+        // db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::insert(" << obj << ")" << endl;
 
         Base::insert(obj->link());
     }
 
     T * remove(T * obj) {
-        db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::remove(" << obj << ")" << endl;
+        // db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::remove(" << obj << ")" << endl;
 
         return Base::remove(obj->link()) ? obj : 0;
     }
 
     void suspend(T * obj) {
-        db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::suspend(" << obj << ")" << endl;
+        // db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::suspend(" << obj << ")" << endl;
 
         Base::remove(obj->link());
     }
 
     void resume(T * obj) {
-        db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::resume(" << obj << ")" << endl;
+        // db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::resume(" << obj << ")" << endl;
 
         Base::insert(obj->link());
     }
 
     T * choose() {
-        db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::choose() => ";
+        // db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::choose() => ";
 
         T * obj = Base::choose()->object();
 
-        db<Scheduler>(TRC) << obj << endl;
+        // db<Scheduler>(TRC) << obj << endl;
 
         return obj;
     }
 
     T * choose_another() {
-        db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::choose_another() => ";
+        // db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::choose_another() => ";
 
         T * obj = Base::choose_another()->object();
 
-        db<Scheduler>(TRC) << obj << endl;
+        // db<Scheduler>(TRC) << obj << endl;
 
         return obj;
     }
 
     T * choose(T * obj) {
-        db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::choose(" << obj;
+        // db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::choose(" << obj;
 
         if(!Base::choose(obj->link()))
             obj = 0;
 
-        db<Scheduler>(TRC) << obj << endl;
+        // db<Scheduler>(TRC) << obj << endl;
 
         return obj;
     }
