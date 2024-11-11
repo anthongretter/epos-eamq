@@ -1,0 +1,518 @@
+MAIN: Hello world!
+CPU: 2 bruh - 0
+CPU: 0 bruh - 2
+CPU: 3 bruh - 1
+CPU: 2 bruh - 3
+CPU: 3 bruh - 4
+CPU: 0 bruh - 5
+CPU: 3 bruh - 7
+CPU: 0 bruh - 8
+CPU: 2 bruh - 6
+11U: 3 bruh - CPU: 0 bruh - 10
+
+CPU: 2 bruh - 9
+<0>: Avaliando Core: 0 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Pulando thread aperiodica :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Novo core minimo: 0 com rate: 0 :<0>
+<0>: Avaliando Core: 1 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Avaliando Core: 2 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Avaliando Core: 3 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Core escolhido: 0 :<0>
+<0>: Avaliando Core: 0 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Pulando thread aperiodica :<0>
+<0>: Core rate = 50000 :<0>
+<0>: Novo core minimo: 0 com rate: 50000 :<0>
+<0>: Avaliando Core: 1 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Novo core minimo: 1 com rate: 0 :<0>
+<0>: Avaliando Core: 2 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Avaliando Core: 3 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Core escolhido: 1 :<0>
+<CPU: 0>: Avaliando Core: 0 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila 1vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+ pogge<0>: Fila: 3 :<0>
+<0>: Pulando threadrs -  aperiodica :<0>
+<0>: Core rate = 50000 :<0>
+<0>: Novo core minimo: 0 com rate: 50000 :<0>
+<0>: A13valiando Core: 1 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0> :<1>
+: Fila: 1
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Novo core minimo: 1 com rate: 0 :<0>
+<0>: Avaliando Core: 2 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Avaliando Core: 3 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Core escolhido: 1 :<0>
+<0>: Avaliando Core: 0 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate CPU: 1 poggers - 14 :<1>
+= 0
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Pulando thread aperiodica :<0>
+<0>: Core rate = 50000 :<0>
+<0>: Novo core minimo: 0 com rate: 50000 :<0>
+<0>: Avaliando Core: 1 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Novo core minimo: 1 com rate: 0 :<0>
+<0>: Avaliando Core: 2 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Avaliando Core: 3 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Core escolhido: 1 :<0>
+<0>: Avaliando Core: 0 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Pulando thread aperiodica :<0>
+<0>: Core rate = 50000 :<0>
+<0>: Novo core minimo: 0 com rate: 50000 :<0>
+<0>: Avaliando Core: 1 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0CPU: >: Fila: 21 poggers :<0>
+ - 15 :<1>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0
+<0>: Fila: 3 :<0>
+<0>: Pulando thread aperiodica :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Novo core minimo: 1 com rate: 0 :<0>
+<0>: Avaliando Core: 2 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Avaliando Core: 3 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Core escolhido: 1 :<0>
+<0>: AvaliCPando Core: 0 :<0U>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = : 0 :<01 poggers - 16>
+<0> :<1>
+: Fila: 1
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Pulando thread aperiodica :<0>
+<0>: Core rate = 50000 :<0>
+<0>: Novo core minimo: 0 com rate: 50000 :<0>
+<0>: Avaliando Core: 1 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Novo core minimo: 1 com rate: 0 :<0>
+<0>: Avaliando Core: 2 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Avaliando Core: 3 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Core escolhido: 1 :<0>
+CPU: 1 poggers - 17
+<0>: Avaliando Core: 0 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Pulando thread aperiodica :<0>
+<0>: Core rate = 50000 :<0>
+<0>: Novo core minimo: 0 com rate: 50000 :<0>
+<0>: Avaliando Core: 1 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Novo core minimo: 1 com rate: 0 :<0>
+<0>: Avaliando Core: 2 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Avaliando Core: 3 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Core escolhido: 1 :<0>
+<0>: Avaliando Core: 0 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: FiCPU: 1 poggers - 18 :<1>
+la: 2
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Pulando thread aperiodica :<0>
+<0>: Core rate = 50000 :<0>
+<0>: Novo core minimo: 0 com rate: 50000 :<0>
+<0>: Avaliando Core: 1 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Novo core minimo: 1 com rate: 0 :<0>
+<0>: Avaliando Core: 2 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Avaliando Core: 3 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Core escolhido: 1 :<0>
+<0>: Avaliando Core: 0 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Pulando thread aperiodica :<0>
+<0>: Core rate = 50000 :<0>
+<0>: Novo core minimo: 0 com rate: 50000 :<0>
+<0>: AvalianCPU: 1 poggers - 19 :<1>
+do Core: 1
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Novo core minimo: 1 com rate: 0 :<0>
+<0>: Avaliando Core: 2 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Avaliando Core: 3 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Core escolhido: 1 :<0>
+CPU: 1 poggers - 20
+<0>: Avaliando Core: 0 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Pulando thread aperiodica :<0>
+<0>: Core rate = 50000 :<0>
+<0>: Novo core minimo: 0 com rate: 50000 :<0>
+<0>: Avaliando Core: 1 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Novo core minimo: 1 com rate: 0 :<0>
+<0>: Avaliando Core: 2 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Avaliando Core: 3 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Core escolhido: 1 :<0>
+<0>: AvaCPU: 1 poggers - 21 :<1>
+liando Core: 0
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Pulando thread aperiodica :<0>
+<0>: Core rate = 50000 :<0>
+<0>: Novo core minimo: 0 com rate: 50000 :<0>
+<0>: Avaliando Core: 1 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Novo core minimo: 1 com rate: 0 :<0>
+<0>: Avaliando Core: 2 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Avaliando Core: 3 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Core escolhido: 1 :<0>
+<0>: Avaliando Core: 0 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Pulando thread aperiodica :<0>
+<0>: Core rate = 50000 :<0>
+<0>: Novo core minimo: 0 com rate: 50000 :<0>
+<0>: Avaliando Core: 1 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apeCPU: 1 poggers - 22 :<1>
+nas aperiódicas Core rate = 0
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Pulando thread aperiodica :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Novo core minimo: 1 com rate: 0 :<0>
+<0>: Avaliando Core: 2 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Avaliando Core: 3 :<0>
+<0>: Fila: 0 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 1 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 2 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Fila: 3 :<0>
+<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
+<0>: Core escolhido: 1 :<0>
+CPU: 1 poggers - 23
+CPU: 0 poggers - 12
+CPU: 1 poggers - 15
+CPU: 1 poggers - 13
+CPU: 1 poggers - 16
+CPU: 1 poggers - 17
+CPU: 1 poggers - 14
+CPU: 1 poggers - 18
+CPU: 1 poggers - 19
+CPU: 1 poggers - 23
+CPU: 1 poggers - 21
+CPU: 1 poggers - 20
+CPU: 0 poggers - 12
+CPU: 1 poggers - 22

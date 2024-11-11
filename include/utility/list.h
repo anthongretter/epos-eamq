@@ -1337,19 +1337,21 @@ public:
         db<PEAMQ>(WRN) << "Inserindo: " << e->object() << " na fila " << e->rank().queue_eamq() << endl;
         if (_list[e->rank().queue_eamq()].empty() && !_chosen) {
             _chosen = e;
-            _occupied_queues++;
         } else {
+            
+            if (_list[e->rank().queue_eamq()].empty() ) {
+                _occupied_queues++;
+            }
+
             _list[e->rank().queue_eamq()].insert(e);
+            _total_size++;
         }
 
-        _total_size++;
     }
 
     Element *remove(Element *e)
     {
         db<PEAMQ>(WRN) << "REMOVENDO: " << e->object() << endl;
-        // Nós VAMOS remover, então posso diminuir aqui
-        _total_size--;
 
         if (e == _chosen)
         {   
@@ -1361,6 +1363,15 @@ public:
                 // adicionamos o primeiro elemento para ser o chosen
                 _chosen = _list[R::current_queue_eamq()].remove_head();
                 db<PEAMQ>(WRN) << "Novo chosen: " << _chosen->object() << endl;
+                _total_size--;
+
+                // Se agora a fila ficou vazia
+                if (_list[R::current_queue_eamq()].size() == 0)
+                {
+                    // diminuimos a quantidade de filas ocupadas
+                    _occupied_queues--;
+                }
+
             } else {
                 // caso já não tenha ninguém naquela fila o chosen é 0
                 // temos que ver onde cada remove acontece, 
@@ -1370,16 +1381,13 @@ public:
                 _chosen = 0;
                 return e;
             }
-            
-            // Se agora a fila ficou vazia
-            if (_list[R::current_queue_eamq()].size() == 0)
-            {
-                // diminuimos a quantidade de filas ocupadas
-                _occupied_queues--;
-            }
 
             return e;
         }
+
+        _total_size--;
+        if (_list[e->rank().queue_eamq()].size() == 1)
+            _occupied_queues--;
 
         db<PEAMQ>(WRN) << "Não é chosen, tirando da fila: " << e->rank().queue_eamq() << endl;
         return _list[e->rank().queue_eamq()].remove(e);
@@ -1403,8 +1411,21 @@ public:
             if (_chosen) {
                 Element * tmp = _chosen;
                _list[tmp->rank().queue_eamq()].insert(tmp);
+
+               // Se devolvido para uma fila que estava vazia
+               if (_list[tmp->rank().queue_eamq()].size() == 1) {
+                   _occupied_queues++;
+               }
+
+            } else {
+                // se não houver um chosen, escolhemos o primeiro da fila, precisamos subtrair o total_size
+                _total_size--;
             }
     
+            // Se a fila estava ocupada com apenas uma thread
+            if (_list[R::current_queue_eamq()].size() == 1) {
+                _occupied_queues--;
+            }
             _chosen = 0;
             _chosen = _list[R::current_queue_eamq()].remove_head();
         }
@@ -1435,7 +1456,12 @@ public:
         {
             Element *tmp = _chosen;
             _chosen = _list[R::current_queue_eamq()].remove_head();
+            if (_list[R::current_queue_eamq()].empty())
+                _occupied_queues--;
+            
             _list[tmp->rank().queue_eamq()].insert(tmp);
+            if (_list[tmp->rank().queue_eamq()].size() == 1)
+                _occupied_queues++;
         }
 
         return _chosen;
@@ -1455,9 +1481,15 @@ public:
         // }
 
         // return _chosen;
+        if (!_chosen) {
+            _total_size--;
+        }
+
         if (e != _chosen)
         {
-            _list[chosen()->rank().queue_eamq()].insert(_chosen);
+            if (_chosen)
+                _list[chosen()->rank().queue_eamq()].insert(_chosen);
+
             _chosen = _list[e->rank().queue_eamq()].remove(e);
         }
 
@@ -1840,6 +1872,7 @@ public:
     Element *head(unsigned int i) { return _list[i].head(); }
     Element *tail() { return _list[R::current_queue()].tail(); }
     Element *tail(unsigned int i) { return _list[i].tail(); }
+    Element *tail(unsigned int i, unsigned int j) { return _list[i].tail(j); }
 
     Iterator begin() { return Iterator(_list[R::current_queue()].head()); }
     Iterator begin(unsigned int queue) { return Iterator(_list[queue].head()); }

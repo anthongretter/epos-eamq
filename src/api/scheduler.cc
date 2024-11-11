@@ -369,39 +369,35 @@ int EAMQ::estimate_rp_waiting_time(unsigned int q) {
 
 volatile unsigned int PEAMQ::evaluate()
 {
-    Priority least = IDLE;
-    unsigned int least_busiest_core = 0;
+    unsigned long long min = IDLE;
+    unsigned int chosen_core = 0;
 
     for (unsigned int core = 0; core < CPU::cores(); core++)
-    {   
-        for (unsigned int q = QUEUES - 1; q < QUEUES; q--)
+    {
+        unsigned long long core_rate = 0;
+
+        for (unsigned int q = 0; q < QUEUES; q++)
         {
-            if (Thread::scheduler()->empty(q))
+            auto last_element = Thread::scheduler()->tail(core, q);
+            while (last_element && !last_element->object()->criterion().periodic())
             {
-                least_busiest_core = core;
-                break;
+                last_element = last_element->prev();
             }
             
-            auto last_element = Thread::scheduler()->tail(q);
-            while (last_element && (last_element->rank() == APERIODIC || last_element->rank() == IDLE))
-            {
-                last_element = Thread::scheduler()->tail(q)->prev();
-            }
-
             if (!last_element)
             {
-                least_busiest_core = core;
-                break;
-            }
-            
-            if (last_element->rank() < least)
-            {
-                least = last_element->rank();
-                least_busiest_core = core;
+                core_rate += 0;
+            } else {
+                core_rate += last_element->object()->priority() - (((last_element->object()->priority() / 1000) * 125) * q);   // (1 - 0.125 x q)
             }
         }
+        if (core_rate < min)
+        {
+            min = core_rate;
+            chosen_core = core;
+        }
     }
-    return least_busiest_core;
+    return chosen_core;
 }
 
 

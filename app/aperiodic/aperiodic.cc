@@ -6,6 +6,7 @@
 using namespace EPOS;
 OStream cout;
 const int N_THREADS_A = 128; // Aperiodic
+
 int isPrime(const int n) {
   bool is_prime = true;
   // 0 and 1 are not prime numbers
@@ -23,16 +24,18 @@ int isPrime(const int n) {
     cout << " found a prime number " << n << endl;
   return 0;
 }
+
 int work(int n)
 {
-    cout << "WORK: Hello world! " << n << endl;
+    cout << "CPU: " << CPU::id() << " WORK: Hello world! " << n << endl;
     for (int i = 0; i < 1000; i++)
     {
         isPrime(i);
     }
-    cout << "WORK: Bye world! " << n << endl;
+    cout << "CPU: " << CPU::id() << " WORK: Bye world! " << n << endl;
     return 0;
 }
+
 int main()
 {
     cout << "MAIN: Hello world!" << endl;

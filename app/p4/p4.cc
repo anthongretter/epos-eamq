@@ -11,7 +11,7 @@ OStream cout;
 int bruh(int n)
 {
     cout << "CPU: " << CPU::id() << " bruh - " << n << endl;
-    //Alarm::delay(50000);
+    Alarm::delay(500000 + (int(Random::random()) % 10000));
     return 0;
 }
 
@@ -19,7 +19,7 @@ int poggers(int n)
 {
     do {
         cout << "CPU: " << CPU::id() << " poggers - " << n << endl;
-        //Alarm::delay(50000);
+        Alarm::delay(1000000 + (int(Random::random()) % 10000));
     } while (Periodic_Thread::wait_next());
     return 0;
 }
@@ -28,8 +28,8 @@ int main()
 {
     cout << "MAIN: Hello world!" << endl;
 
-    const int N_THREADS_A = 6; // Aperiodic
-    const int N_THREADS_P = 3; // Periodic
+    const int N_THREADS_A = 12; // Aperiodic
+    const int N_THREADS_P = 12; // Periodic
 
     const Thread::Criterion CRITS[3]{Thread::LOW, Thread::NORMAL, Thread::HIGH};
 
@@ -46,8 +46,8 @@ int main()
     {
         // Thread periodic
         auto conf = Periodic_Thread::Configuration(
-            500000 + (int(Random::random()) % 1000),        // periodo
-            120000 + (int(Random::random()) % 2400),          // deadline
+            500000 + (int(Random::random()) % 10000),        // periodo
+            120000 + (int(Random::random()) % 24000),          // deadline
             Periodic_Thread::UNKNOWN,
             Periodic_Thread::NOW,
             2

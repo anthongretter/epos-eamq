@@ -246,7 +246,8 @@ void Thread::yield()
 
     Thread *prev = running();
     // P4 - Acho que precisa disso 
-    // prev->criterion().handle(EAMQ::CHANGE_QUEUE);
+    prev->criterion().handle(EAMQ::CHANGE_QUEUE);
+    
     Thread *next = _scheduler.choose_another();
 
     dispatch(prev, next);

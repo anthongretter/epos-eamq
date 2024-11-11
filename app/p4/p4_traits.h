@@ -36,6 +36,12 @@ struct Traits<Debug> : public Traits<Build>
 };
 
 template <>
+struct Traits<AAA> : public Traits<Build>
+{
+    static const bool debugged = false;
+};
+
+template <>
 struct Traits<PEAMQ> : public Traits<Build>
 {
     static const bool debugged = false;

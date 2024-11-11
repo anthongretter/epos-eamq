@@ -19,7 +19,7 @@ template<> struct Traits<Build>: public Traits_Tokens
 
     // Default flags
     static const bool enabled = true;
-    static const bool debugged = false;
+    static const bool debugged = true;
     static const bool monitored = true;
     static const bool hysterically_debugged = false;
 };
@@ -29,7 +29,7 @@ template<> struct Traits<Build>: public Traits_Tokens
 template<> struct Traits<Debug>: public Traits<Build>
 {
     static const bool error   = true;
-    static const bool warning = true;
+    static const bool warning = false;
     static const bool info    = false;
     static const bool trace   = false;
 };
@@ -120,7 +120,7 @@ template<> struct Traits<Thread>: public Traits<Build>
     static const bool simulate_capacity = false;
     static const int priority_inversion_protocol = NONE;
 
-    typedef IF<(CPUS > 1), GEAMQ, GEAMQ>::Result Criterion;
+    typedef IF<(CPUS > 1), PEAMQ, EAMQ>::Result Criterion;
     static const unsigned int QUANTUM = 10000; // us
 };
 
