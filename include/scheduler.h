@@ -489,7 +489,7 @@ public:
     static const unsigned int QUEUES_CORES = Traits<Machine>::CPUS;
 
     PEAMQ(int p = APERIODIC)
-    : Variable_Queue_Scheduler(((_priority == IDLE) || (_priority == MAIN)) ? CPU::id() : ++_next_queue %= CPU::cores()), EAMQ(p) {}
+    : Variable_Queue_Scheduler(((p == IDLE) || (p == MAIN)) ? CPU::id() : ++_next_queue %= CPU::cores()), EAMQ(p) {}
     PEAMQ(const Microsecond & p, const Microsecond & d = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY)
     : Variable_Queue_Scheduler((cpu != ANY) ? cpu : ++_next_queue %= CPU::cores()), EAMQ(p, d, c) {}
 

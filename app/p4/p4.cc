@@ -46,8 +46,8 @@ int main()
     {
         // Thread periodic
         auto conf = Periodic_Thread::Configuration(
-            500000 + (int(Random::random()) % 1000000),        // periodo
-            120000 + (int(Random::random()) % 2400000),          // deadline
+            500000 + (int(Random::random()) % 1000),        // periodo
+            120000 + (int(Random::random()) % 2400),          // deadline
             Periodic_Thread::UNKNOWN,
             Periodic_Thread::NOW,
             2
