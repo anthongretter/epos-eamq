@@ -12,15 +12,15 @@ const int N_THREADS_A = 16; // Aperiodic
 const int SEARCH_N = 1000000;
 
 int primes_found = 0;
-Semaphore m;
+Mutex m;
 
-struct aperiodic_test
+struct Params
 {
   int i;
   int begin;
   int end;
 
-  aperiodic_test(int i, int begin, int end) : i(i), begin(begin), end(end) {}
+  Params(int i, int begin, int end) : i(i), begin(begin), end(end) {}
 };
 
 
@@ -42,11 +42,11 @@ bool isPrime(const int n) {
 }
 
 
-int work(aperiodic_test *struct_test)
+int work(Params *args)
 {
-    int t = struct_test->i;
-    int begin = struct_test->begin;
-    int end = struct_test->end;
+    int t = args->i;
+    int begin = args->begin;
+    int end = args->end;
     cout << "WORK " << t << ": Hello! " << "I will search " << begin << " - " << end << endl;
 
     int found = 0;
@@ -56,9 +56,9 @@ int work(aperiodic_test *struct_test)
     }
 
     if (found) {
-      m.p();
+      m.lock();
       primes_found += found;
-      m.v();
+      m.unlock();
     }
 
     // cout << "WORK " << t << ": Bye! " << "I found " << found << " primes!" << endl;
@@ -73,7 +73,6 @@ int main()
 
     const Thread::Criterion CRITS[3]{Thread::LOW, Thread::NORMAL, Thread::HIGH};
 
-
     Thread *ts[N_THREADS_A];
     int search_range = (SEARCH_N + (N_THREADS_A - 1)) / N_THREADS_A;
     int start = 1;
@@ -87,11 +86,11 @@ int main()
                       ? start + search_range
                       : SEARCH_N;
         
-        aperiodic_test *work_struct = new aperiodic_test(i, start, end);
+        Params *args = new Params(i, start, end);
 
         auto conf = Thread::Configuration(Thread::READY, CRITS[i % 3]);
         cout << "i: " << i << endl;
-        ts[i] = new Thread(conf, &work, work_struct);
+        ts[i] = new Thread(conf, &work, args);
         start += search_range + 1;
     }
 

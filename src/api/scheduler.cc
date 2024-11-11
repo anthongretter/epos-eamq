@@ -145,7 +145,7 @@ void EAMQ::handle(Event event) {
             EAMQ::next_queue();
             db<PEAMQ>(WRN) << "current_queue_eamq: " << current_queue_eamq() << endl;
         // Enquanto fila atual não vazia ou uma volta completa
-        } while (Thread::scheduler()->empty() && (current_queue_eamq() != last));
+        } while (Thread::scheduler()->empty(current_queue_eamq()) && (current_queue_eamq() != last));
         db<PEAMQ>(WRN) << "CPU " << CPU::id() << " prox: " << current_queue_eamq() << endl;
 
         // Ajustando a frequência conforme a fila
@@ -227,7 +227,7 @@ void EAMQ::handle(Event event) {
     }
     // Quando uma thread foi liberado para executar tarefa
     if (periodic() && (event & JOB_RELEASE)) {
-        db<PEAMQ>(WRN) << "RELEASE PERIODICO" <<endl;
+        db<AAA>(WRN) << "RELEASE PERIODICO" <<endl;
         _personal_statistics.job_execution_time = 0;
         rank_eamq();
     }
@@ -374,12 +374,16 @@ volatile unsigned int PEAMQ::evaluate()
 
     for (unsigned int core = 0; core < CPU::cores(); core++)
     {   
-        for (unsigned int q = QUEUES - 1; q < QUEUES; q++)
+        for (unsigned int q = QUEUES - 1; q < QUEUES; q--)
         {
-            if (Thread::scheduler()->empty(q)) continue;
+            if (Thread::scheduler()->empty(q))
+            {
+                least_busiest_core = core;
+                break;
+            }
             
             auto last_element_rank = Thread::scheduler()->tail(q)->rank();
-            if (last_element_rank.periodic() && last_element_rank < least)
+            if (last_element_rank < least)
             {
                 least = last_element_rank;
                 least_busiest_core = core;

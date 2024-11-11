@@ -483,15 +483,15 @@ public:
 
 };
 
-class PEAMQ : public Variable_Queue_Scheduler, public EAMQ 
+class PEAMQ : public EAMQ, public Variable_Queue_Scheduler
 {
 public: 
     static const unsigned int QUEUES_CORES = Traits<Machine>::CPUS;
 
     PEAMQ(int p = APERIODIC)
-    : Variable_Queue_Scheduler(((_priority == IDLE) || (_priority == MAIN)) ? CPU::id() : ++_next_queue %= CPU::cores()), EAMQ(p) {}
+    : EAMQ(p), Variable_Queue_Scheduler(((_priority == IDLE) || (_priority == MAIN)) ? CPU::id() : ++_next_queue %= CPU::cores()) {}
     PEAMQ(const Microsecond & p, const Microsecond & d = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY)
-    : Variable_Queue_Scheduler((cpu != ANY) ? cpu : ++_next_queue %= CPU::cores()), EAMQ(p, d, c) {}
+    : EAMQ(p, d, c), Variable_Queue_Scheduler((cpu != ANY) ? cpu : ++_next_queue %= CPU::cores()) {}
 
     using Variable_Queue_Scheduler::queue;
     static unsigned int current_queue() { return CPU::id(); }

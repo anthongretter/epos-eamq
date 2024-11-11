@@ -101,7 +101,8 @@ public:
 
         if(t->_alarm.times()) {
             db<AAA>(WRN) << "Entrou no if do times" << endl;
-            t->_semaphore.p();}
+            t->_semaphore.p();
+        }
 
         return t->_alarm.times();
     }

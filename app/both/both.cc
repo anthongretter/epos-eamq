@@ -21,13 +21,46 @@ int func_c();
 OStream cout;
 Chronometer chrono;
 
+
+
 Periodic_Thread *thread_a;
 Periodic_Thread *thread_b;
 Periodic_Thread *thread_c;
 
+
+
 Point<long, 2> p, p1(2131231, 123123), p2(2, 13123), p3(12312, 123123);
 
 unsigned long base_loop_count;
+
+int isPrime(const int n) {
+  bool is_prime = true;
+  // 0 and 1 are not prime numbers
+  if (n == 0 || n == 1) {
+    is_prime = false;
+  }
+  // loop to check if n is prime
+  for (int i = 2; i <= n/2; ++i) {
+    if (n % i == 0) {
+      is_prime = false;
+      break;
+    }
+  }
+  if (is_prime)
+    cout << " found a prime number " << n << endl;
+  return 0;
+}
+
+int work(int n)
+{
+    cout << "WORK: Hello world! " << n << endl;
+    for (int i = 0; i < 1000; i++)
+    {
+        isPrime(i);
+    }
+    cout << "WORK: Bye world! " << n << endl;
+    return 0;
+}
 
 void callibrate()
 {
