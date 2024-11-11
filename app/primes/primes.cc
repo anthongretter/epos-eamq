@@ -9,7 +9,7 @@ using namespace EPOS;
 OStream cout;
 
 const int N_THREADS_A = 16; // Aperiodic
-const int SEARCH_N = 1000000;
+const int SEARCH_N = 1000;
 
 int primes_found = 0;
 Semaphore m;
@@ -44,10 +44,8 @@ bool isPrime(const int n) {
 
 int work(aperiodic_test *struct_test)
 {
-    int t = struct_test->i;
     int begin = struct_test->begin;
     int end = struct_test->end;
-    cout << "WORK " << t << ": Hello! " << "I will search " << begin << " - " << end << endl;
 
     int found = 0;
     for (int i = begin; i <= end; i++)
@@ -88,9 +86,8 @@ int main()
                       : SEARCH_N;
         
         aperiodic_test *work_struct = new aperiodic_test(i, start, end);
-
+        cout << "WORK " << i << " will search " << start << " - " << end << endl;
         auto conf = Thread::Configuration(Thread::READY, CRITS[i % 3]);
-        cout << "i: " << i << endl;
         ts[i] = new Thread(conf, &work, work_struct);
         start += search_range + 1;
     }

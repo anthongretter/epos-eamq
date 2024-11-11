@@ -127,7 +127,7 @@ public:
             _scheduler.insert(behind->object());
 
             // if the thread has changed its queue, it is necessary to check the new previous ones
-            if (this->criterion().queue() != behind->object()->criterion().queue()) {
+            if (this->criterion().queue_eamq() != behind->object()->criterion().queue_eamq()) {
                 behind->object()->for_all_behind(event);
             }
 

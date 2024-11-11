@@ -491,7 +491,7 @@ public:
     PEAMQ(int p = APERIODIC)
     : Variable_Queue_Scheduler(((p == IDLE) || (p == MAIN)) ? CPU::id() : ++_next_queue %= CPU::cores()), EAMQ(p) {}
     PEAMQ(const Microsecond & p, const Microsecond & d = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY)
-    : Variable_Queue_Scheduler((cpu != ANY) ? cpu : ++_next_queue %= CPU::cores()), EAMQ(p, d, c) {}
+    : Variable_Queue_Scheduler((cpu != ANY) ? cpu : evaluate()), EAMQ(p, d, c) {}
 
     using Variable_Queue_Scheduler::queue;
     static unsigned int current_queue() { return CPU::id(); }
@@ -500,8 +500,6 @@ protected:
     volatile unsigned int evaluate();
 
 };
-
-class AAA {};
 
 __END_SYS
 

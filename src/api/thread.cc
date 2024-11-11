@@ -249,8 +249,6 @@ void Thread::yield()
     // prev->criterion().handle(EAMQ::CHANGE_QUEUE);
     Thread *next = _scheduler.choose_another();
 
-    db<AAA>(WRN) << "YIELD"<< endl;
-
     dispatch(prev, next);
 
     unlock();
@@ -263,7 +261,6 @@ void Thread::exit(int status)
 
     Thread *prev = running();
 
-    db<AAA>(WRN) << "EXIT " << prev << endl;
     // vejam remove() da lista, nós presumimos que a fila já está atualizada
     // caso o chosen seja removido
     // (na prática não há diferença alguma, pois ele será reinserido,
@@ -287,18 +284,14 @@ void Thread::exit(int status)
 
     Thread *next = _scheduler.choose(); // at least idle will always be there
 
-    db<AAA>(WRN) << "NEXT: " << next << endl;
     dispatch(prev, next);
 
     unlock();
-    db<AAA>(WRN) << "unlock de boa em exit" << endl;
 }
 
 void Thread::sleep(Queue *q)
 {
     assert(locked()); // locking handled by caller
-
-    db<AAA>(WRN) << "Thread::sleep(running=" << running() << ",q=" << q<< ")" << endl << endl;
     
     Thread *prev = running();
     prev->criterion().handle(EAMQ::CHANGE_QUEUE);
@@ -319,39 +312,24 @@ void Thread::sleep(Queue *q)
 
 void Thread::wakeup(Queue *q)
 {
-    db<AAA>(WRN) << endl << "Wakeup chamado" << endl; 
-
     assert(locked()); // locking handled by caller
 
     if (!q->empty())
     {
-        db<AAA>(WRN) << "fila do wakeup não está vazia" << endl; 
-
-        for (Queue::Element * i = q->begin(); i != nullptr; i = i->next()) {
-            db<AAA>(WRN) << "sleeping - Element: " << i->object() << endl;
-        }
 
         Thread *t = q->remove()->object();
         
-        db<AAA>(WRN) << "Thread removida da fila de espera " << t << endl;
-
         t->_state = READY;
         t->_waiting = 0;
 
-        db<AAA>(WRN) << "State = ready, _waiting = 0 (já não tem mais referencia para fila)" << endl;
 
         t->criterion().handle(EAMQ::RESUME_THREAD);
 
-        db<AAA>(WRN) << "Fez o rank_eamq" << endl;
         // TODO: Throw a new event to recalculate rank from behind when the thread is woken up
         _scheduler.resume(t);
-        db<AAA>(WRN) << "Fez o resume" << endl;
-
-        // db<AAA>(WRN) << endl << "Thread::wakeup(wakingup=" << t << ",q=" << q << ")" << endl;
 
 
         if(preemptive) {
-            db<AAA>(WRN) << "Chamou o reschedule com parametro: " << t->_link.rank().queue() << endl;
             reschedule(t->_link.rank().queue());
 
         }
@@ -450,7 +428,6 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
             prev->_state = READY;}
         next->_state = RUNNING;
 
-        db<AAA>(WRN) << "Thread::dispatch(prev=" << prev << ",next=" << next << ")" << endl;
         if (Traits<Thread>::debugged && Traits<Debug>::info)
         {
             CPU::Context tmp;
@@ -471,13 +448,11 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
         if(smp)
             _lock.acquire();
 
-        db<AAA>(WRN) << "TERMINOU TROCA" << endl;
     }
 }
 
 int Thread::idle()
 {
-    db<AAA>(WRN) << "Thread::idle(cpu=" << CPU::id() << ",this=" << running() << ")" << endl;
 
     while(_thread_count > CPU::cores()) { // someone else besides idles
 
@@ -489,12 +464,9 @@ int Thread::idle()
 
         if(_scheduler.schedulables() > 0) // a thread might have been woken up by another CPU
         {
-            db<AAA>(WRN) << "Dentro do IF de schdulables" << endl;
             yield();
         }
     }
-
-    db<AAA>(WRN) << "Saiu do while de thread_count" << endl;
 
     if(CPU::id() == CPU::BSP) {
         kout << "\n\n*** The last thread under control of EPOS has finished." << endl;

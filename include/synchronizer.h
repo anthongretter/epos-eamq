@@ -99,7 +99,6 @@ public:
     ~Semaphore_Handler() {}
 
     void operator()() {
-        db<AAA>(WRN) << "v no semaforo: " << endl;
         _handler->v(); 
     }
 

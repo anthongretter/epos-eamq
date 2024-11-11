@@ -374,14 +374,29 @@ volatile unsigned int PEAMQ::evaluate()
 
     for (unsigned int core = 0; core < CPU::cores(); core++)
     {   
-        for (unsigned int q = QUEUES - 1; q < QUEUES; q++)
+        for (unsigned int q = QUEUES - 1; q < QUEUES; q--)
         {
-            if (Thread::scheduler()->empty(q)) continue;
-            
-            auto last_element_rank = Thread::scheduler()->tail(q)->rank();
-            if (last_element_rank.periodic() && last_element_rank < least)
+            if (Thread::scheduler()->empty(q))
             {
-                least = last_element_rank;
+                least_busiest_core = core;
+                break;
+            }
+            
+            auto last_element = Thread::scheduler()->tail(q);
+            while (last_element && (last_element->rank() == APERIODIC || last_element->rank() == IDLE))
+            {
+                last_element = Thread::scheduler()->tail(q)->prev();
+            }
+
+            if (!last_element)
+            {
+                least_busiest_core = core;
+                break;
+            }
+            
+            if (last_element->rank() < least)
+            {
+                least = last_element->rank();
                 least_busiest_core = core;
             }
         }

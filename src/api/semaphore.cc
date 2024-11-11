@@ -29,7 +29,7 @@ void Semaphore::p()
 
 void Semaphore::v()
 {
-    db<AAA>(WRN) << "Semaphore::v(this=" << this << ",value=" << _value << ")" << endl;
+    db<Thread>(TRC) << "Semaphore::v(this=" << this << ",value=" << _value << ")" << endl;
 
     begin_atomic();
     if(finc(_value) < 0)

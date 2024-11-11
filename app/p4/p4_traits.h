@@ -14,7 +14,7 @@ struct Traits<Build> : public Traits_Tokens
     static const unsigned int ARCHITECTURE = IA32;
     static const unsigned int MACHINE = PC;
     static const unsigned int MODEL = Legacy_PC;
-    static const unsigned int CPUS = 2;
+    static const unsigned int CPUS = 4;
     static const unsigned int NETWORKING = STANDALONE;
     static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)
 
@@ -33,12 +33,6 @@ struct Traits<Debug> : public Traits<Build>
     static const bool warning = false;
     static const bool info = false;
     static const bool trace = false;
-};
-
-template <>
-struct Traits<AAA> : public Traits<Build>
-{
-    static const bool debugged = true;
 };
 
 template <>
