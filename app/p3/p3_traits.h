@@ -14,14 +14,14 @@ struct Traits<Build> : public Traits_Tokens
     static const unsigned int ARCHITECTURE = IA32;
     static const unsigned int MACHINE = PC;
     static const unsigned int MODEL = Legacy_PC;
-    static const unsigned int CPUS = 2;
+    static const unsigned int CPUS = 1;
     static const unsigned int NETWORKING = STANDALONE;
     static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)
 
     // Default flags
     static const bool enabled = true;
     static const bool monitored = true;
-    static const bool debugged = false;
+    static const bool debugged = true;
     static const bool hysterically_debugged = false;
 };
 
@@ -29,10 +29,22 @@ struct Traits<Build> : public Traits_Tokens
 template <>
 struct Traits<Debug> : public Traits<Build>
 {
-    static const bool error = true;
+    static const bool error = false;
     static const bool warning = true;
     static const bool info = false;
     static const bool trace = false;
+};
+
+template <>
+struct Traits<AAA> : public Traits<Build>
+{
+    static const bool debugged = true;
+};
+
+template <>
+struct Traits<PEAMQ> : public Traits<Build>
+{
+    static const bool debugged = false;
 };
 
 template <>
@@ -44,7 +56,7 @@ struct Traits<EAMQ> : public Traits<Build>
 template <>
 struct Traits<GEAMQ> : public Traits<Build>
 {
-    static const bool debugged = true;
+    static const bool debugged = false;
 };
 
 template <>
@@ -126,7 +138,7 @@ struct Traits<System> : public Traits<Build>
 {
     static const bool multithread = (Traits<Application>::MAX_THREADS > 1) || (CPUS > 1);
     static const bool multicore = multithread && (CPUS > 1);
-    static const bool multiheap = Traits<Scratchpad>::enabled;
+    static const bool multiheap = false;
 
     static const unsigned long LIFE_SPAN = 1 * YEAR; // s
     static const unsigned int DUTY_CYCLE = 1000000;  // ppm
@@ -147,7 +159,7 @@ struct Traits<Thread> : public Traits<Build>
     static const int priority_inversion_protocol = NONE;
 
 
-    typedef IF<(CPUS > 1), PEAMQ, PEAMQ>::Result Criterion;
+    typedef IF<(CPUS > 1), PEAMQ, EAMQ>::Result Criterion;
     static const unsigned int QUANTUM = 10000; // us
 
     static const bool debugged = false;

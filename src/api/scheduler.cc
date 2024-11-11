@@ -89,13 +89,16 @@ FCFS::FCFS(int p, Tn & ... an): Priority((p == IDLE) ? IDLE : Alarm::elapsed()) 
 template FCFS::FCFS<>(int p);
 
 /////////////////////////////// P2 - Single core /////////////////////////////// 
-volatile unsigned EAMQ::_current_queue = QUEUES - 1;
+//volatile unsigned EAMQ::_current_queue = QUEUES - 1;
+volatile unsigned int EAMQ::_current_queue[Traits<Machine>::CPUS] = {QUEUES - 1};
 volatile unsigned int GEAMQ::_current_queue[GEAMQ::HEADS] = {QUEUES - 1}; // apenas inicializa o core 0
 bool GEAMQ::initialized = false; // workaround para fazer uma lazy initialization no _current_queue
+bool EAMQ::initialized = false;
 
 // Construtor para threads aperiódicas
 EAMQ::EAMQ(int p) : RT_Common(p), _is_recent_insertion(false), _personal_statistics{}, _behind_of(nullptr), _periodic(false)
 {
+    EAMQ::initialize_current_queue();
     // Coloca thread MAIN e IDLE na mesma fila (fila com menor frequência possível)
     // prioridade igual a LOW ou mais baixos
     if (p == MAIN || p == IDLE || p >= LOW) {
@@ -363,6 +366,29 @@ int EAMQ::estimate_rp_waiting_time(unsigned int q) {
 
     return rp_waiting_time;
 }
+
+volatile unsigned int PEAMQ::evaluate()
+{
+    Priority least = IDLE;
+    unsigned int least_busiest_core = 0;
+
+    for (unsigned int core = 0; core < CPU::cores(); core++)
+    {   
+        for (unsigned int q = QUEUES - 1; q < QUEUES; q++)
+        {
+            if (Thread::scheduler()->empty(q)) continue;
+            
+            auto last_element_rank = Thread::scheduler()->tail(q)->rank();
+            if (last_element_rank.periodic() && last_element_rank < least)
+            {
+                least = last_element_rank;
+                least_busiest_core = core;
+            }
+        }
+    }
+    return least_busiest_core;
+}
+
 
 /////////////////////////////// P3 - Multicore Global Scheduling /////////////////////////////// 
 // P3TEST - novo calculo de rank -> precisa alterar rp waiting time ainda tbm 

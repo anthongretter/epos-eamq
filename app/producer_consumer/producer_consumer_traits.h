@@ -28,8 +28,8 @@ template<> struct Traits<Build>: public Traits_Tokens
 // Utilities
 template<> struct Traits<Debug>: public Traits<Build>
 {
-    static const bool error   = true;
-    static const bool warning = true;
+    static const bool error   = false;
+    static const bool warning = false;
     static const bool info    = false;
     static const bool trace   = false;
 };
@@ -101,7 +101,7 @@ template<> struct Traits<System>: public Traits<Build>
 {
     static const bool multithread = (Traits<Application>::MAX_THREADS > 1) || (CPUS > 1);
     static const bool multicore = multithread && (CPUS > 1);
-    static const bool multiheap = Traits<Scratchpad>::enabled;
+    static const bool multiheap = false;
 
     static const unsigned long LIFE_SPAN = 1 * YEAR; // s
     static const unsigned int DUTY_CYCLE = 1000000; // ppm
@@ -120,7 +120,7 @@ template<> struct Traits<Thread>: public Traits<Build>
     static const bool simulate_capacity = false;
     static const int priority_inversion_protocol = NONE;
 
-    typedef IF<(CPUS > 1), GEAMQ, GEAMQ>::Result Criterion;
+    typedef IF<(CPUS > 1), PEAMQ, EAMQ>::Result Criterion;
     static const unsigned int QUANTUM = 10000; // us
 };
 

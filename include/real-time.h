@@ -95,12 +95,13 @@ public:
     static volatile bool wait_next() {
         Periodic_Thread * t = reinterpret_cast<Periodic_Thread *>(running());
 
-        db<GEAMQ>(TRC) << "Thread::wait_next(this=" << t << ",times=" << t->_alarm.times() << ")" << endl;
+        db<AAA>(WRN) << endl << "Thread::wait_next(this=" << t << ",times=" << t->_alarm.times() << ")" << endl;
 
         t->criterion().handle(Criterion::JOB_FINISH);
 
-        if(t->_alarm.times())
-            t->_semaphore.p();
+        if(t->_alarm.times()) {
+            db<AAA>(WRN) << "Entrou no if do times" << endl;
+            t->_semaphore.p();}
 
         return t->_alarm.times();
     }

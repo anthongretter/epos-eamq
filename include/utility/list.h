@@ -1362,7 +1362,7 @@ public:
                 _chosen = _list[R::current_queue_eamq()].remove_head();
                 db<PEAMQ>(WRN) << "Novo chosen: " << _chosen->object() << endl;
             } else {
-                db<PEAMQ>(ERR) << "Fila vazia, chosen = 0" << endl;
+                db<AAA>(WRN) << "AAAAA Fila vazia, chosen = 0" << endl;
                 // caso já não tenha ninguém naquela fila o chosen é 0
                 // temos que ver onde cada remove acontece, 
                 // pois o current_queue_eamq() PRECISA ESTAR ATUALIZADO PARA UMA FILA COM THREADS

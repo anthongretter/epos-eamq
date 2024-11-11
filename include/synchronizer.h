@@ -98,7 +98,10 @@ public:
     Semaphore_Handler(Semaphore * h) : _handler(h) {}
     ~Semaphore_Handler() {}
 
-    void operator()() { _handler->v(); }
+    void operator()() {
+        db<AAA>(WRN) << "v no semaforo: " << endl;
+        _handler->v(); 
+    }
 
 private:
     Semaphore * _handler;

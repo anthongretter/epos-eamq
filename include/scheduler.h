@@ -397,8 +397,8 @@ public:
     int rank_eamq();
     const volatile unsigned int &queue_eamq() const volatile { return _queue_eamq; } // returns the Thread's queue
 
-    static const volatile unsigned int &current_queue_eamq() {return _current_queue;} // current global queue
-    virtual void next_queue() { ++_current_queue %= QUEUES;}        // points to next global queue with threads
+    static const volatile unsigned int &current_queue_eamq() { return _current_queue[CPU::id()]; } // current global queue
+    virtual void next_queue() { ++_current_queue[CPU::id()] %= QUEUES;}        // points to next global queue with threads
 
 protected:    
     void set_queue(unsigned int q) { _queue_eamq = q; };
@@ -425,6 +425,14 @@ protected:
      */
     int estimate_rp_waiting_time(unsigned int q);
 
+    static void initialize_current_queue() {
+        if (!initialized) {
+            for (volatile unsigned int &q : _current_queue) {
+                q = QUEUES - 1;
+            }
+            initialized = true;
+        }
+    }
 
 protected:
     volatile unsigned int _queue_eamq;
@@ -432,8 +440,9 @@ protected:
     Personal_Statistics _personal_statistics;
     Thread *_behind_of;
     bool _periodic;
+    static bool initialized;
 
-    static volatile unsigned int _current_queue; 
+    static volatile unsigned int _current_queue[Traits<Machine>::CPUS]; 
 };
 
 // P3TEST - Multicore Global Scheduling 
@@ -459,8 +468,8 @@ protected:
             initialized = true;
         }
     }
-    
     static bool initialized;
+    
 
 public:
     int rank_eamq();
@@ -474,20 +483,25 @@ public:
 
 };
 
-class PEAMQ : public EAMQ, public Variable_Queue_Scheduler
+class PEAMQ : public Variable_Queue_Scheduler, public EAMQ 
 {
 public: 
     static const unsigned int QUEUES_CORES = Traits<Machine>::CPUS;
 
     PEAMQ(int p = APERIODIC)
-    : EAMQ(p), Variable_Queue_Scheduler(((_priority == IDLE) || (_priority == MAIN)) ? CPU::id() : ++_next_queue %= CPU::cores()) {}
+    : Variable_Queue_Scheduler(((_priority == IDLE) || (_priority == MAIN)) ? CPU::id() : ++_next_queue %= CPU::cores()), EAMQ(p) {}
     PEAMQ(const Microsecond & p, const Microsecond & d = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY)
-    : EAMQ(p, d, c), Variable_Queue_Scheduler((cpu != ANY) ? cpu : ++_next_queue %= CPU::cores()) {}
+    : Variable_Queue_Scheduler((cpu != ANY) ? cpu : ++_next_queue %= CPU::cores()), EAMQ(p, d, c) {}
 
     using Variable_Queue_Scheduler::queue;
     static unsigned int current_queue() { return CPU::id(); }
 
+protected:
+    volatile unsigned int evaluate();
+
 };
+
+class AAA {};
 
 __END_SYS
 
