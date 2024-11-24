@@ -411,6 +411,8 @@ protected:
      */
     static Hertz frequency_within(unsigned int queue)
     {
+        if (Traits<System>::RUN_TO_HALT) return CPU::max_clock();
+
         Hertz f = CPU::max_clock() - (((CPU::max_clock() / 1000) * 125) * queue);
         return f;
     };

@@ -309,15 +309,7 @@ Thread * EAMQ::search_t_fitted(unsigned int q)
 
 int EAMQ::rank_eamq() {
     // Baseado em Choosen não saindo da fila
-
-    int num_queues = QUEUES;
-
-    // Se for RUN_TO_HALT, só tem uma fila (potencia máxima)
-    if (Traits<System>::RUN_TO_HALT) {
-        num_queues = 1;
-    }
-
-    for (int i = num_queues - 1; i >= 0; i--) {
+    for (int i = QUEUES - 1; i >= 0; i--) {
         // tempo de execução restante estimado
         int eet_remaining = _personal_statistics.remaining_et[i];
         
