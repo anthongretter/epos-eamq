@@ -42,6 +42,8 @@ public:
         if(Traits<Timer>::enabled)
             Timer::reset();
 
+        // Barreira dita pelo Leonardo
+        CPU::smp_barrier();
         first->_context->load();
     }
 };

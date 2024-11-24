@@ -39,6 +39,8 @@ void Thread::init()
     if (CPU::id() != CPU::BSP)
         CPU::smp_barrier();
 
+    // Timer reset dito pelo Leonardo
+    Timer::reset();
     // Idle thread creation does not cause rescheduling (see Thread::constructor_epilogue)
     new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
 
