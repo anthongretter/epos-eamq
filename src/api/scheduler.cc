@@ -154,7 +154,7 @@ void EAMQ::handle(Event event) {
         db<PEAMQ>(WRN) << "CPU " << CPU::id() << " prox: " << current_queue_eamq() << endl;
 
         // Se for RUN_TO_HALT, não ajusta a frequência (100%)
-        if (!Traits<System>::RUN_TO_HALT) {
+        // if (!Traits<System>::RUN_TO_HALT) {
 
             // Ajustando a frequência conforme a fila
             Hertz f = frequency_within(current_queue_eamq());
@@ -164,7 +164,7 @@ void EAMQ::handle(Event event) {
             if (last != current_queue_eamq()) {
                 db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue_eamq() << endl;
             }
-        }
+        // }
         db<PEAMQ>(WRN) << "HEAD: " << Thread::scheduler()->head()->object() << ", TAIL: " << Thread::scheduler()->tail()->object() << endl;
     }
     if (event & CREATE) {
