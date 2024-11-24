@@ -148,13 +148,17 @@ void EAMQ::handle(Event event) {
         } while (Thread::scheduler()->empty() && (current_queue_eamq() != last));
         db<PEAMQ>(WRN) << "CPU " << CPU::id() << " prox: " << current_queue_eamq() << endl;
 
-        // Ajustando a frequência conforme a fila
-        Hertz f = frequency_within(current_queue_eamq());
-        CPU::clock(f);
-        
-        // So that IDLE doesnt spam this
-        if (last != current_queue_eamq()) {
-            db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue_eamq() << endl;
+        // Se for RUN_TO_HALT, não ajusta a frequência (100%)
+        if (!Traits<System>::RUN_TO_HALT) {
+
+            // Ajustando a frequência conforme a fila
+            Hertz f = frequency_within(current_queue_eamq());
+            CPU::clock(f);
+            
+            // So that IDLE doesnt spam this
+            if (last != current_queue_eamq()) {
+                db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue_eamq() << endl;
+            }
         }
         db<PEAMQ>(WRN) << "HEAD: " << Thread::scheduler()->head()->object() << ", TAIL: " << Thread::scheduler()->tail()->object() << endl;
     }
@@ -301,7 +305,14 @@ Thread * EAMQ::search_t_fitted(unsigned int q)
 int EAMQ::rank_eamq() {
     // Baseado em Choosen não saindo da fila
 
-    for (int i = QUEUES - 1; i >= 0; i--) {
+    int num_queues = QUEUES;
+
+    // Se for RUN_TO_HALT, só tem uma fila (potencia máxima)
+    if (Traits<System>::RUN_TO_HALT) {
+        num_queues = 1;
+    }
+
+    for (int i = num_queues - 1; i >= 0; i--) {
         // tempo de execução restante estimado
         int eet_remaining = _personal_statistics.remaining_et[i];
         
@@ -346,8 +357,10 @@ int EAMQ::rank_eamq() {
             return 1;
         }
     }
-    // Não encontrou lugar na fila
+    // Não encontrou lugar na fila e vai inserir na sub-fila com maior frequencia
     db<EAMQ>(TRC) << "Thread not inserted in any queue" << endl;
+    _priority = 0;
+    set_queue(0);
     return 0;
 }
 
@@ -422,13 +435,16 @@ volatile unsigned int PEAMQ::evaluate()
 
 //         //db<Thread>(WRN) << "Current_queue ATUAL: " << current_queue() << endl;
 
-//         // Ajustando a frequência conforme a fila
-//         Hertz f = frequency_within(current_queue());
-//         CPU::clock(f);
-        
-//         // So that IDLE doesnt spam this
-//         if (last != current_queue()) {
-//             db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue() << endl;
+//         // Se for RUN_TO_HALT, não ajusta a frequência (100%)
+//         if (!Traits<System>::RUN_TO_HALT) {
+//             // Ajustando a frequência conforme a fila
+//             Hertz f = frequency_within(current_queue());
+//             CPU::clock(f);
+            
+//             // So that IDLE doesnt spam this
+//             if (last != current_queue()) {
+//                 db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue() << endl;
+//             }
 //         }
 //     }
 //     if (event & CREATE) {
