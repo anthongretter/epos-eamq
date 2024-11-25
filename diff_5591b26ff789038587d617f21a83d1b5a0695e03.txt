@@ -1,3 +1,49 @@
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..1ac0bca
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,24 @@
++# Gitignore personalizado
++# Binários
++app/*/*
++!app/*/*.h
++!app/*/*.cc
++!app/*/makefile
++
++# Configurações
++*.cfg
++
++# Imagem
++img/*
++!img/makefile
++
++# Arquivos temporários
++*.o
++
++# Ferramentas
++eposcfg
++eposmkbi
++
++# IDEs
++.vscode
++.idea
+diff --git a/Dockerfile b/Dockerfile
+new file mode 100644
+index 0000000..e391a70
+--- /dev/null
++++ b/Dockerfile
+@@ -0,0 +1,10 @@
++FROM fedora:40
++
++RUN yum -y update &&  \
++    yum -y install make g++ gcc gdb qemu binutils binutils-x86_64-linux-gnu cross-gcc-common \
++                    gcc-c++-x86_64-linux-gnu nano dev86 bridge-utils libvirt virt-install qemu-kvm && \
++    yum clean all
++
++WORKDIR /app
++
++ENTRYPOINT ["/sbin/init"]
 diff --git a/README.md b/README.md
 deleted file mode 100644
 index 28d7fc1..0000000
@@ -124,76 +170,64 @@ index 0000000..be645ba
 +    return 0;
 +}
 \ No newline at end of file
-diff --git a/app/hello/hello_traits.h b/app/aperiodic/aperiodic_traits.h
-similarity index 50%
-rename from app/hello/hello_traits.h
-rename to app/aperiodic/aperiodic_traits.h
-index 01a8463..c8c46c7 100644
---- a/app/hello/hello_traits.h
+diff --git a/app/aperiodic/aperiodic_traits.h b/app/aperiodic/aperiodic_traits.h
+new file mode 100644
+index 0000000..d35d37a
+--- /dev/null
 +++ b/app/aperiodic/aperiodic_traits.h
-@@ -6,80 +6,110 @@
- __BEGIN_SYS
- 
- // Build
--template<> struct Traits<Build>: public Traits_Tokens
+@@ -0,0 +1,198 @@
++#ifndef __traits_h
++#define __traits_h
++
++#include <system/config.h>
++
++__BEGIN_SYS
++
++// Build
 +template <>
 +struct Traits<Build> : public Traits_Tokens
- {
-     // Basic configuration
-     static const unsigned int SMOD = LIBRARY;
-     static const unsigned int ARCHITECTURE = IA32;
-     static const unsigned int MACHINE = PC;
-     static const unsigned int MODEL = Legacy_PC;
--    static const unsigned int CPUS = ((MODEL == Legacy_PC) || (MODEL == Raspberry_Pi3) || (MODEL == Realview_PBX) || (MODEL == Zynq) || (MODEL == SiFive_U)) ? 2 : 1;
++{
++    // Basic configuration
++    static const unsigned int SMOD = LIBRARY;
++    static const unsigned int ARCHITECTURE = IA32;
++    static const unsigned int MACHINE = PC;
++    static const unsigned int MODEL = Legacy_PC;
 +    static const unsigned int CPUS = 4;
-     static const unsigned int NETWORKING = STANDALONE;
-     static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)
- 
-     // Default flags
-     static const bool enabled = true;
--    static const bool monitored = true;
-     static const bool debugged = true;
++    static const unsigned int NETWORKING = STANDALONE;
++    static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)
++
++    // Default flags
++    static const bool enabled = true;
++    static const bool debugged = true;
 +    static const bool monitored = true;
-     static const bool hysterically_debugged = false;
- };
- 
--
- // Utilities
--template<> struct Traits<Debug>: public Traits<Build>
++    static const bool hysterically_debugged = false;
++};
++
++// Utilities
 +template <>
 +struct Traits<Debug> : public Traits<Build>
- {
--    static const bool error   = true;
--    static const bool warning = true;
--    static const bool info    = false;
--    static const bool trace   = false;
++{
 +    static const bool error = true;
 +    static const bool warning = false;
 +    static const bool info = false;
 +    static const bool trace = false;
- };
- 
--template<> struct Traits<Lists>: public Traits<Build>
++};
++
 +template <>
 +struct Traits<EAMQ> : public Traits<Build>
- {
--    static const bool debugged = hysterically_debugged;
++{
 +    static const bool debugged = false;
- };
- 
--template<> struct Traits<Spin>: public Traits<Build>
++};
++
 +template <>
 +struct Traits<GEAMQ> : public Traits<Build>
- {
--    static const bool debugged = hysterically_debugged;
++{
 +    static const bool debugged = false;
- };
- 
--template<> struct Traits<Heaps>: public Traits<Build>
++};
++
 +template <>
 +struct Traits<PEAMQ> : public Traits<Build>
- {
--    static const bool debugged = hysterically_debugged;
++{
 +    static const bool debugged = true;
 +};
 +
@@ -207,9 +241,8 @@ index 01a8463..c8c46c7 100644
 +struct Traits<Spin> : public Traits<Build>
 +{
 +    static const bool debugged = false;
- };
- 
--template<> struct Traits<Observers>: public Traits<Build>
++};
++
 +template <>
 +struct Traits<Heaps> : public Traits<Build>
 +{
@@ -218,144 +251,129 @@ index 01a8463..c8c46c7 100644
 +
 +template <>
 +struct Traits<Observers> : public Traits<Build>
- {
-     // Some observed objects are created before initializing the Display
-     // Enabling debug may cause trouble in some Machines
-     static const bool debugged = false;
- };
- 
--
- // System Parts (mostly to fine control debugging)
--template<> struct Traits<Boot>: public Traits<Build>
++{
++    // Some observed objects are created before initializing the Display
++    // Enabling debug may cause trouble in some Machines
++    static const bool debugged = false;
++};
++
++// System Parts (mostly to fine control debugging)
 +template <>
 +struct Traits<Boot> : public Traits<Build>
- {
++{
 +    static const bool debugged = false;
- };
- 
--template<> struct Traits<Setup>: public Traits<Build>
++};
++
 +template <>
 +struct Traits<Setup> : public Traits<Build>
- {
++{
 +    static const bool debugged = false;
- };
- 
--template<> struct Traits<Init>: public Traits<Build>
++};
++
 +template <>
 +struct Traits<Init> : public Traits<Build>
- {
++{
 +    static const bool debugged = false;
- };
- 
--template<> struct Traits<Framework>: public Traits<Build>
++};
++
 +template <>
 +struct Traits<Framework> : public Traits<Build>
- {
++{
 +    static const bool debugged = false;
- };
- 
--template<> struct Traits<Aspect>: public Traits<Build>
++};
++
 +template <>
 +struct Traits<Aspect> : public Traits<Build>
- {
-     static const bool debugged = hysterically_debugged;
- };
- 
--
- __END_SYS
- 
- // Mediators
-@@ -88,23 +118,24 @@ __END_SYS
- 
- __BEGIN_SYS
- 
--
- // API Components
--template<> struct Traits<Application>: public Traits<Build>
++{
++    static const bool debugged = hysterically_debugged;
++};
++
++__END_SYS
++
++// Mediators
++#include __ARCHITECTURE_TRAITS_H
++#include __MACHINE_TRAITS_H
++
++__BEGIN_SYS
++
++// API Components
 +template <>
 +struct Traits<Application> : public Traits<Build>
- {
-     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
-     static const unsigned int HEAP_SIZE = Traits<Machine>::HEAP_SIZE;
-     static const unsigned int MAX_THREADS = Traits<Machine>::MAX_THREADS;
- };
- 
--template<> struct Traits<System>: public Traits<Build>
++{
++    static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
++    static const unsigned int HEAP_SIZE = Traits<Machine>::HEAP_SIZE;
++    static const unsigned int MAX_THREADS = Traits<Machine>::MAX_THREADS;
++};
++
 +template <>
 +struct Traits<System> : public Traits<Build>
- {
-     static const bool multithread = (Traits<Application>::MAX_THREADS > 1) || (CPUS > 1);
-     static const bool multicore = multithread && (CPUS > 1);
--    static const bool multiheap = Traits<Scratchpad>::enabled;
++{
++    static const bool multithread = (Traits<Application>::MAX_THREADS > 1) || (CPUS > 1);
++    static const bool multicore = multithread && (CPUS > 1);
 +    static const bool multiheap = false;
- 
-     static const unsigned long LIFE_SPAN = 1 * YEAR; // s
--    static const unsigned int DUTY_CYCLE = 1000000; // ppm
++
++    static const unsigned long LIFE_SPAN = 1 * YEAR; // s
 +    static const unsigned int DUTY_CYCLE = 1000000;  // ppm
- 
-     static const bool reboot = true;
- 
-@@ -112,7 +143,8 @@ template<> struct Traits<System>: public Traits<Build>
-     static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + Traits<Build>::CPUS) * Traits<Application>::STACK_SIZE;
- };
- 
--template<> struct Traits<Thread>: public Traits<Build>
++
++    static const bool reboot = true;
++
++    static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
++    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + Traits<Build>::CPUS) * Traits<Application>::STACK_SIZE;
++
++    static const unsigned int RUN_TO_HALT = true;
++};
++
 +template <>
 +struct Traits<Thread> : public Traits<Build>
- {
-     static const bool enabled = Traits<System>::multithread;
-     static const bool smp = Traits<System>::multicore;
-@@ -121,28 +153,43 @@ template<> struct Traits<Thread>: public Traits<Build>
-     static const int priority_inversion_protocol = NONE;
- 
- 
--    typedef IF<(CPUS > 1), Fixed_CPU, Priority>::Result Criterion;
++{
++    static const bool enabled = Traits<System>::multithread;
++    static const bool smp = Traits<System>::multicore;
++    static const bool trace_idle = hysterically_debugged;
++    static const bool simulate_capacity = false;
++    static const int priority_inversion_protocol = NONE;
++
++
 +    typedef IF<(CPUS > 1), PEAMQ, EAMQ>::Result Criterion;
-     static const unsigned int QUANTUM = 10000; // us
++    static const unsigned int QUANTUM = 10000; // us
 +
 +    static const bool debugged = false;
- };
- 
--template<> struct Traits<Scheduler<Thread>>: public Traits<Build>
++};
++
 +template <>
 +struct Traits<Scheduler<Thread>> : public Traits<Build>
- {
--    static const bool debugged = Traits<Thread>::trace_idle || hysterically_debugged;
++{
 +    static const bool debugged = false;
- };
- 
--template<> struct Traits<Synchronizer>: public Traits<Build>
++};
++
 +template <>
 +struct Traits<Synchronizer> : public Traits<Build>
- {
-     static const bool enabled = Traits<System>::multithread;
++{
++    static const bool enabled = Traits<System>::multithread;
 +    static const bool debugged = false;
- };
- 
--template<> struct Traits<Alarm>: public Traits<Build>
++};
++
 +template <>
 +struct Traits<Alarm> : public Traits<Build>
- {
-     static const bool visible = hysterically_debugged;
++{
++    static const bool visible = hysterically_debugged;
 +    static const bool debugged = false;
- };
- 
--template<> struct Traits<Address_Space>: public Traits<Build> {};
++};
++
 +template <>
 +struct Traits<Address_Space> : public Traits<Build>
 +{
 +    static const bool debugged = false;
 +};
- 
--template<> struct Traits<Segment>: public Traits<Build> {};
++
 +template <>
 +struct Traits<Segment> : public Traits<Build>
 +{
 +    static const bool debugged = false;
 +};
- 
- __END_SYS
- 
++
++__END_SYS
++
++#endif
 diff --git a/app/concurrent_philosophers_dinner/makefile b/app/aperiodic/makefile
 similarity index 100%
 rename from app/concurrent_philosophers_dinner/makefile
@@ -671,6 +689,161 @@ index 40c7c05..0000000
 -
 -    return 0;
 -}
+diff --git a/app/hello/hello_traits.h b/app/hello/hello_traits.h
+deleted file mode 100644
+index 01a8463..0000000
+--- a/app/hello/hello_traits.h
++++ /dev/null
+@@ -1,149 +0,0 @@
+-#ifndef __traits_h
+-#define __traits_h
+-
+-#include <system/config.h>
+-
+-__BEGIN_SYS
+-
+-// Build
+-template<> struct Traits<Build>: public Traits_Tokens
+-{
+-    // Basic configuration
+-    static const unsigned int SMOD = LIBRARY;
+-    static const unsigned int ARCHITECTURE = IA32;
+-    static const unsigned int MACHINE = PC;
+-    static const unsigned int MODEL = Legacy_PC;
+-    static const unsigned int CPUS = ((MODEL == Legacy_PC) || (MODEL == Raspberry_Pi3) || (MODEL == Realview_PBX) || (MODEL == Zynq) || (MODEL == SiFive_U)) ? 2 : 1;
+-    static const unsigned int NETWORKING = STANDALONE;
+-    static const unsigned int EXPECTED_SIMULATION_TIME = 60; // s (0 => not simulated)
+-
+-    // Default flags
+-    static const bool enabled = true;
+-    static const bool monitored = true;
+-    static const bool debugged = true;
+-    static const bool hysterically_debugged = false;
+-};
+-
+-
+-// Utilities
+-template<> struct Traits<Debug>: public Traits<Build>
+-{
+-    static const bool error   = true;
+-    static const bool warning = true;
+-    static const bool info    = false;
+-    static const bool trace   = false;
+-};
+-
+-template<> struct Traits<Lists>: public Traits<Build>
+-{
+-    static const bool debugged = hysterically_debugged;
+-};
+-
+-template<> struct Traits<Spin>: public Traits<Build>
+-{
+-    static const bool debugged = hysterically_debugged;
+-};
+-
+-template<> struct Traits<Heaps>: public Traits<Build>
+-{
+-    static const bool debugged = hysterically_debugged;
+-};
+-
+-template<> struct Traits<Observers>: public Traits<Build>
+-{
+-    // Some observed objects are created before initializing the Display
+-    // Enabling debug may cause trouble in some Machines
+-    static const bool debugged = false;
+-};
+-
+-
+-// System Parts (mostly to fine control debugging)
+-template<> struct Traits<Boot>: public Traits<Build>
+-{
+-};
+-
+-template<> struct Traits<Setup>: public Traits<Build>
+-{
+-};
+-
+-template<> struct Traits<Init>: public Traits<Build>
+-{
+-};
+-
+-template<> struct Traits<Framework>: public Traits<Build>
+-{
+-};
+-
+-template<> struct Traits<Aspect>: public Traits<Build>
+-{
+-    static const bool debugged = hysterically_debugged;
+-};
+-
+-
+-__END_SYS
+-
+-// Mediators
+-#include __ARCHITECTURE_TRAITS_H
+-#include __MACHINE_TRAITS_H
+-
+-__BEGIN_SYS
+-
+-
+-// API Components
+-template<> struct Traits<Application>: public Traits<Build>
+-{
+-    static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
+-    static const unsigned int HEAP_SIZE = Traits<Machine>::HEAP_SIZE;
+-    static const unsigned int MAX_THREADS = Traits<Machine>::MAX_THREADS;
+-};
+-
+-template<> struct Traits<System>: public Traits<Build>
+-{
+-    static const bool multithread = (Traits<Application>::MAX_THREADS > 1) || (CPUS > 1);
+-    static const bool multicore = multithread && (CPUS > 1);
+-    static const bool multiheap = Traits<Scratchpad>::enabled;
+-
+-    static const unsigned long LIFE_SPAN = 1 * YEAR; // s
+-    static const unsigned int DUTY_CYCLE = 1000000; // ppm
+-
+-    static const bool reboot = true;
+-
+-    static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
+-    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + Traits<Build>::CPUS) * Traits<Application>::STACK_SIZE;
+-};
+-
+-template<> struct Traits<Thread>: public Traits<Build>
+-{
+-    static const bool enabled = Traits<System>::multithread;
+-    static const bool smp = Traits<System>::multicore;
+-    static const bool trace_idle = hysterically_debugged;
+-    static const bool simulate_capacity = false;
+-    static const int priority_inversion_protocol = NONE;
+-
+-
+-    typedef IF<(CPUS > 1), Fixed_CPU, Priority>::Result Criterion;
+-    static const unsigned int QUANTUM = 10000; // us
+-};
+-
+-template<> struct Traits<Scheduler<Thread>>: public Traits<Build>
+-{
+-    static const bool debugged = Traits<Thread>::trace_idle || hysterically_debugged;
+-};
+-
+-template<> struct Traits<Synchronizer>: public Traits<Build>
+-{
+-    static const bool enabled = Traits<System>::multithread;
+-};
+-
+-template<> struct Traits<Alarm>: public Traits<Build>
+-{
+-    static const bool visible = hysterically_debugged;
+-};
+-
+-template<> struct Traits<Address_Space>: public Traits<Build> {};
+-
+-template<> struct Traits<Segment>: public Traits<Build> {};
+-
+-__END_SYS
+-
+-#endif
 diff --git a/app/hello/makefile b/app/p4/makefile
 similarity index 100%
 rename from app/hello/makefile
@@ -746,10 +919,10 @@ index 0000000..00c90fd
 +}
 diff --git a/app/p4/p4_traits.h b/app/p4/p4_traits.h
 new file mode 100644
-index 0000000..da6523a
+index 0000000..87947f7
 --- /dev/null
 +++ b/app/p4/p4_traits.h
-@@ -0,0 +1,202 @@
+@@ -0,0 +1,205 @@
 +#ifndef __traits_h
 +#define __traits_h
 +
@@ -899,6 +1072,9 @@ index 0000000..da6523a
 +
 +    static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
 +    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + Traits<Build>::CPUS) * Traits<Application>::STACK_SIZE;
++
++    static const unsigned int RUN_TO_HALT = true;
++
 +};
 +
 +template <>
@@ -953,7 +1129,7 @@ index 0000000..da6523a
 +
 +#endif
 diff --git a/app/philosophers_dinner/philosophers_dinner_traits.h b/app/philosophers_dinner/philosophers_dinner_traits.h
-index 23c561a..a028cc1 100644
+index 23c561a..b101b37 100644
 --- a/app/philosophers_dinner/philosophers_dinner_traits.h
 +++ b/app/philosophers_dinner/philosophers_dinner_traits.h
 @@ -10,9 +10,9 @@ template<> struct Traits<Build>: public Traits_Tokens
@@ -995,7 +1171,16 @@ index 23c561a..a028cc1 100644
  
      static const unsigned long LIFE_SPAN = 1 * YEAR; // s
      static const unsigned int DUTY_CYCLE = 1000000; // ppm
-@@ -119,7 +120,7 @@ template<> struct Traits<Thread>: public Traits<Build>
+@@ -109,6 +110,8 @@ template<> struct Traits<System>: public Traits<Build>
+ 
+     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
+     static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + Traits<Build>::CPUS) * Traits<Application>::STACK_SIZE;
++
++    static const unsigned int RUN_TO_HALT = true;
+ };
+ 
+ template<> struct Traits<Thread>: public Traits<Build>
+@@ -119,7 +122,7 @@ template<> struct Traits<Thread>: public Traits<Build>
      static const bool simulate_capacity = false;
      static const int priority_inversion_protocol = NONE;
  
@@ -1138,10 +1323,10 @@ index 0000000..c11312a
 +}
 diff --git a/app/primes/primes_traits.h b/app/primes/primes_traits.h
 new file mode 100644
-index 0000000..c8c46c7
+index 0000000..d35d37a
 --- /dev/null
 +++ b/app/primes/primes_traits.h
-@@ -0,0 +1,196 @@
+@@ -0,0 +1,198 @@
 +#ifndef __traits_h
 +#define __traits_h
 +
@@ -1285,6 +1470,8 @@ index 0000000..c8c46c7
 +
 +    static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
 +    static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + Traits<Build>::CPUS) * Traits<Application>::STACK_SIZE;
++
++    static const unsigned int RUN_TO_HALT = true;
 +};
 +
 +template <>
@@ -1339,7 +1526,7 @@ index 0000000..c8c46c7
 +
 +#endif
 diff --git a/app/producer_consumer/producer_consumer_traits.h b/app/producer_consumer/producer_consumer_traits.h
-index a070563..1f57299 100644
+index a070563..27a733f 100644
 --- a/app/producer_consumer/producer_consumer_traits.h
 +++ b/app/producer_consumer/producer_consumer_traits.h
 @@ -10,15 +10,16 @@ template<> struct Traits<Build>: public Traits_Tokens
@@ -1382,7 +1569,16 @@ index a070563..1f57299 100644
  
      static const unsigned long LIFE_SPAN = 1 * YEAR; // s
      static const unsigned int DUTY_CYCLE = 1000000; // ppm
-@@ -119,7 +120,7 @@ template<> struct Traits<Thread>: public Traits<Build>
+@@ -109,6 +110,8 @@ template<> struct Traits<System>: public Traits<Build>
+ 
+     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
+     static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + Traits<Build>::CPUS) * Traits<Application>::STACK_SIZE;
++
++    static const unsigned int RUN_TO_HALT = true;
+ };
+ 
+ template<> struct Traits<Thread>: public Traits<Build>
+@@ -119,7 +122,7 @@ template<> struct Traits<Thread>: public Traits<Build>
      static const bool simulate_capacity = false;
      static const int priority_inversion_protocol = NONE;
  
@@ -1391,6 +1587,9 @@ index a070563..1f57299 100644
      static const unsigned int QUANTUM = 10000; // us
  };
  
+diff --git a/diff_5591b26ff789038587d617f21a83d1b5a0695e03.txt b/diff_5591b26ff789038587d617f21a83d1b5a0695e03.txt
+new file mode 100644
+index 0000000..ffb44d7
 diff --git a/include/architecture/ia32/ia32_cpu.h b/include/architecture/ia32/ia32_cpu.h
 index 684c90c..9050b99 100644
 --- a/include/architecture/ia32/ia32_cpu.h
@@ -1550,7 +1749,7 @@ index fd8e751..e9d570d 100644
          return t->_alarm.times();
      }
 diff --git a/include/scheduler.h b/include/scheduler.h
-index fea2c9d..6ba3ece 100644
+index fea2c9d..7b24257 100644
 --- a/include/scheduler.h
 +++ b/include/scheduler.h
 @@ -26,48 +26,53 @@ protected:
@@ -1851,7 +2050,7 @@ index fea2c9d..6ba3ece 100644
  {
  public:
      static const bool dynamic = true;
-@@ -347,10 +354,166 @@ public:
+@@ -347,10 +354,168 @@ public:
      void handle(Event event);
  };
  
@@ -1912,6 +2111,8 @@ index fea2c9d..6ba3ece 100644
 +     */
 +    static Hertz frequency_within(unsigned int queue)
 +    {
++        if (Traits<System>::RUN_TO_HALT) return CPU::max_clock(); 
++
 +        Hertz f = CPU::max_clock() - (((CPU::max_clock() / 1000) * 125) * queue);
 +        return f;
 +    };
@@ -2061,6 +2262,56 @@ index af8f717..3cc2edc 100644
  
  private:
      Time_Base _time;
+diff --git a/include/utility/heap.h b/include/utility/heap.h
+index fba63db..6323c64 100644
+--- a/include/utility/heap.h
++++ b/include/utility/heap.h
+@@ -10,7 +10,7 @@
+ __BEGIN_UTIL
+ 
+ // Heap
+-class Heap: private Grouping_List<char>
++class Heap_Imp: private Grouping_List<char>
+ {
+ protected:
+     static const bool typed = Traits<System>::multiheap;
+@@ -20,11 +20,11 @@ public:
+     using Grouping_List<char>::size;
+     using Grouping_List<char>::grouped_size;
+ 
+-    Heap() {
++    Heap_Imp() {
+         db<Init, Heaps>(TRC) << "Heap() => " << this << endl;
+     }
+ 
+-    Heap(void * addr, unsigned long bytes) {
++    Heap_Imp(void * addr, unsigned long bytes) {
+         db<Init, Heaps>(TRC) << "Heap(addr=" << addr << ",bytes=" << bytes << ") => " << this << endl;
+ 
+         free(addr, bytes);
+@@ -76,11 +76,11 @@ public:
+     static void typed_free(void * ptr) {
+         long * addr = reinterpret_cast<long *>(ptr);
+         unsigned long bytes = *--addr;
+-        Heap * heap = reinterpret_cast<Heap *>(*--addr);
++        Heap_Imp * heap = reinterpret_cast<Heap_Imp *>(*--addr);
+         heap->free(addr, bytes);
+     }
+ 
+-    static void untyped_free(Heap * heap, void * ptr) {
++    static void untyped_free(Heap_Imp * heap, void * ptr) {
+         long * addr = reinterpret_cast<long *>(ptr);
+         unsigned long bytes = *--addr;
+         heap->free(addr, bytes);
+@@ -150,7 +150,7 @@ private:
+ };
+ 
+ 
+-typedef Heap_Wrapper<Heap, Traits<System>::multicore> Application_Heap;
++typedef Heap_Wrapper<Heap_Imp, Traits<System>::multicore> Heap;
+ 
+ __END_UTIL
+ 
 diff --git a/include/utility/list.h b/include/utility/list.h
 index 1a7107c..339e432 100644
 --- a/include/utility/list.h
@@ -4561,11 +4812,536 @@ index 41ee114..9ba7742 100644
  __END_UTIL
  
  #endif
+diff --git a/src/api/lixo b/src/api/lixo
+new file mode 100644
+index 0000000..b6ee883
+--- /dev/null
++++ b/src/api/lixo
+@@ -0,0 +1,518 @@
++MAIN: Hello world!
++CPU: 2 bruh - 0
++CPU: 0 bruh - 2
++CPU: 3 bruh - 1
++CPU: 2 bruh - 3
++CPU: 3 bruh - 4
++CPU: 0 bruh - 5
++CPU: 3 bruh - 7
++CPU: 0 bruh - 8
++CPU: 2 bruh - 6
++11U: 3 bruh - CPU: 0 bruh - 10
++
++CPU: 2 bruh - 9
++<0>: Avaliando Core: 0 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Pulando thread aperiodica :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Novo core minimo: 0 com rate: 0 :<0>
++<0>: Avaliando Core: 1 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Avaliando Core: 2 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Avaliando Core: 3 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Core escolhido: 0 :<0>
++<0>: Avaliando Core: 0 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Pulando thread aperiodica :<0>
++<0>: Core rate = 50000 :<0>
++<0>: Novo core minimo: 0 com rate: 50000 :<0>
++<0>: Avaliando Core: 1 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Novo core minimo: 1 com rate: 0 :<0>
++<0>: Avaliando Core: 2 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Avaliando Core: 3 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Core escolhido: 1 :<0>
++<CPU: 0>: Avaliando Core: 0 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila 1vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++ pogge<0>: Fila: 3 :<0>
++<0>: Pulando threadrs -  aperiodica :<0>
++<0>: Core rate = 50000 :<0>
++<0>: Novo core minimo: 0 com rate: 50000 :<0>
++<0>: A13valiando Core: 1 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0> :<1>
++: Fila: 1
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Novo core minimo: 1 com rate: 0 :<0>
++<0>: Avaliando Core: 2 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Avaliando Core: 3 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Core escolhido: 1 :<0>
++<0>: Avaliando Core: 0 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate CPU: 1 poggers - 14 :<1>
++= 0
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Pulando thread aperiodica :<0>
++<0>: Core rate = 50000 :<0>
++<0>: Novo core minimo: 0 com rate: 50000 :<0>
++<0>: Avaliando Core: 1 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Novo core minimo: 1 com rate: 0 :<0>
++<0>: Avaliando Core: 2 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Avaliando Core: 3 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Core escolhido: 1 :<0>
++<0>: Avaliando Core: 0 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Pulando thread aperiodica :<0>
++<0>: Core rate = 50000 :<0>
++<0>: Novo core minimo: 0 com rate: 50000 :<0>
++<0>: Avaliando Core: 1 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0CPU: >: Fila: 21 poggers :<0>
++ - 15 :<1>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0
++<0>: Fila: 3 :<0>
++<0>: Pulando thread aperiodica :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Novo core minimo: 1 com rate: 0 :<0>
++<0>: Avaliando Core: 2 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Avaliando Core: 3 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Core escolhido: 1 :<0>
++<0>: AvaliCPando Core: 0 :<0U>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = : 0 :<01 poggers - 16>
++<0> :<1>
++: Fila: 1
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Pulando thread aperiodica :<0>
++<0>: Core rate = 50000 :<0>
++<0>: Novo core minimo: 0 com rate: 50000 :<0>
++<0>: Avaliando Core: 1 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Novo core minimo: 1 com rate: 0 :<0>
++<0>: Avaliando Core: 2 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Avaliando Core: 3 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Core escolhido: 1 :<0>
++CPU: 1 poggers - 17
++<0>: Avaliando Core: 0 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Pulando thread aperiodica :<0>
++<0>: Core rate = 50000 :<0>
++<0>: Novo core minimo: 0 com rate: 50000 :<0>
++<0>: Avaliando Core: 1 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Novo core minimo: 1 com rate: 0 :<0>
++<0>: Avaliando Core: 2 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Avaliando Core: 3 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Core escolhido: 1 :<0>
++<0>: Avaliando Core: 0 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: FiCPU: 1 poggers - 18 :<1>
++la: 2
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Pulando thread aperiodica :<0>
++<0>: Core rate = 50000 :<0>
++<0>: Novo core minimo: 0 com rate: 50000 :<0>
++<0>: Avaliando Core: 1 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Novo core minimo: 1 com rate: 0 :<0>
++<0>: Avaliando Core: 2 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Avaliando Core: 3 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Core escolhido: 1 :<0>
++<0>: Avaliando Core: 0 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Pulando thread aperiodica :<0>
++<0>: Core rate = 50000 :<0>
++<0>: Novo core minimo: 0 com rate: 50000 :<0>
++<0>: AvalianCPU: 1 poggers - 19 :<1>
++do Core: 1
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Novo core minimo: 1 com rate: 0 :<0>
++<0>: Avaliando Core: 2 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Avaliando Core: 3 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Core escolhido: 1 :<0>
++CPU: 1 poggers - 20
++<0>: Avaliando Core: 0 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Pulando thread aperiodica :<0>
++<0>: Core rate = 50000 :<0>
++<0>: Novo core minimo: 0 com rate: 50000 :<0>
++<0>: Avaliando Core: 1 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Novo core minimo: 1 com rate: 0 :<0>
++<0>: Avaliando Core: 2 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Avaliando Core: 3 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Core escolhido: 1 :<0>
++<0>: AvaCPU: 1 poggers - 21 :<1>
++liando Core: 0
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Pulando thread aperiodica :<0>
++<0>: Core rate = 50000 :<0>
++<0>: Novo core minimo: 0 com rate: 50000 :<0>
++<0>: Avaliando Core: 1 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Novo core minimo: 1 com rate: 0 :<0>
++<0>: Avaliando Core: 2 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Avaliando Core: 3 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Core escolhido: 1 :<0>
++<0>: Avaliando Core: 0 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Pulando thread aperiodica :<0>
++<0>: Core rate = 50000 :<0>
++<0>: Novo core minimo: 0 com rate: 50000 :<0>
++<0>: Avaliando Core: 1 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apeCPU: 1 poggers - 22 :<1>
++nas aperiódicas Core rate = 0
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Pulando thread aperiodica :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Novo core minimo: 1 com rate: 0 :<0>
++<0>: Avaliando Core: 2 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Avaliando Core: 3 :<0>
++<0>: Fila: 0 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 1 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 2 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Fila: 3 :<0>
++<0>: Fila vazia / apenas aperiódicas Core rate = 0 :<0>
++<0>: Core escolhido: 1 :<0>
++CPU: 1 poggers - 23
++CPU: 0 poggers - 12
++CPU: 1 poggers - 15
++CPU: 1 poggers - 13
++CPU: 1 poggers - 16
++CPU: 1 poggers - 17
++CPU: 1 poggers - 14
++CPU: 1 poggers - 18
++CPU: 1 poggers - 19
++CPU: 1 poggers - 23
++CPU: 1 poggers - 21
++CPU: 1 poggers - 20
++CPU: 0 poggers - 12
++CPU: 1 poggers - 22
+\ No newline at end of file
 diff --git a/src/api/scheduler.cc b/src/api/scheduler.cc
-index 376f77b..d5d7241 100644
+index 376f77b..2ffe250 100644
 --- a/src/api/scheduler.cc
 +++ b/src/api/scheduler.cc
-@@ -1,17 +1,668 @@
+@@ -1,17 +1,681 @@
 +
  // EPOS CPU Scheduler Component Implementation
  
@@ -4669,6 +5445,11 @@ index 376f77b..d5d7241 100644
 +EAMQ::EAMQ(int p) : RT_Common(p), _is_recent_insertion(false), _personal_statistics{}, _behind_of(nullptr), _periodic(false)
 +{
 +    EAMQ::initialize_current_queue();
++//    if (Traits<System>::RUN_TO_HALT) {
++//        _queue_eamq = 0;
++//        return;
++//    }
++
 +    // Coloca thread MAIN e IDLE na mesma fila (fila com menor frequência possível)
 +    // prioridade igual a LOW ou mais baixos
 +    if (p == MAIN || p == IDLE || p >= LOW) {
@@ -4718,14 +5499,18 @@ index 376f77b..d5d7241 100644
 +        } while (Thread::scheduler()->empty() && (current_queue_eamq() != last));
 +        db<PEAMQ>(WRN) << "CPU " << CPU::id() << " prox: " << current_queue_eamq() << endl;
 +
-+        // Ajustando a frequência conforme a fila
-+        Hertz f = frequency_within(current_queue_eamq());
-+        CPU::clock(f);
-+        
-+        // So that IDLE doesnt spam this
-+        if (last != current_queue_eamq()) {
-+            db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue_eamq() << endl;
-+        }
++        // Se for RUN_TO_HALT, não ajusta a frequência (100%)
++        // if (!Traits<System>::RUN_TO_HALT) {
++
++            // Ajustando a frequência conforme a fila
++            Hertz f = frequency_within(current_queue_eamq());
++            CPU::clock(f);
++            
++            // So that IDLE doesnt spam this
++            if (last != current_queue_eamq()) {
++                db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue_eamq() << endl;
++            }
++        // }
 +        db<PEAMQ>(WRN) << "HEAD: " << Thread::scheduler()->head()->object() << ", TAIL: " << Thread::scheduler()->tail()->object() << endl;
 +    }
 +    if (event & CREATE) {
@@ -4870,7 +5655,6 @@ index 376f77b..d5d7241 100644
 +
 +int EAMQ::rank_eamq() {
 +    // Baseado em Choosen não saindo da fila
-+
 +    for (int i = QUEUES - 1; i >= 0; i--) {
 +        // tempo de execução restante estimado
 +        int eet_remaining = _personal_statistics.remaining_et[i];
@@ -4916,8 +5700,10 @@ index 376f77b..d5d7241 100644
 +            return 1;
 +        }
 +    }
-+    // Não encontrou lugar na fila
++    // Não encontrou lugar na fila e vai inserir na sub-fila com maior frequencia
 +    db<EAMQ>(TRC) << "Thread not inserted in any queue" << endl;
++    _priority = 0;
++    set_queue(0);
 +    return 0;
 +}
 +
@@ -4992,13 +5778,16 @@ index 376f77b..d5d7241 100644
 +
 +//         //db<Thread>(WRN) << "Current_queue ATUAL: " << current_queue() << endl;
 +
-+//         // Ajustando a frequência conforme a fila
-+//         Hertz f = frequency_within(current_queue());
-+//         CPU::clock(f);
-+        
-+//         // So that IDLE doesnt spam this
-+//         if (last != current_queue()) {
-+//             db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue() << endl;
++//         // Se for RUN_TO_HALT, não ajusta a frequência (100%)
++//         if (!Traits<System>::RUN_TO_HALT) {
++//             // Ajustando a frequência conforme a fila
++//             Hertz f = frequency_within(current_queue());
++//             CPU::clock(f);
++            
++//             // So that IDLE doesnt spam this
++//             if (last != current_queue()) {
++//                 db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue() << endl;
++//             }
 +//         }
 +//     }
 +//     if (event & CREATE) {
@@ -5725,7 +6514,7 @@ index 5dfa94a..e2657f7 100644
  
      if(CPU::id() == CPU::BSP) {
 diff --git a/src/api/thread_init.cc b/src/api/thread_init.cc
-index a88ebe4..ace67dc 100644
+index a88ebe4..a423b1d 100644
 --- a/src/api/thread_init.cc
 +++ b/src/api/thread_init.cc
 @@ -17,6 +17,9 @@ void Thread::init()
@@ -5738,7 +6527,7 @@ index a88ebe4..ace67dc 100644
  
      if(smp)
          IC::enable(IC::INT_RESCHEDULER);
-@@ -29,14 +32,19 @@ void Thread::init()
+@@ -29,14 +32,21 @@ void Thread::init()
          // If EPOS is a library, then adjust the application entry point to __epos_app_entry, which will directly call main().
          // In this case, _init will have already been called, before Init_Application to construct MAIN's global objects.
          Main * main = reinterpret_cast<Main *>(__epos_app_entry);
@@ -5752,6 +6541,8 @@ index a88ebe4..ace67dc 100644
 +    if (CPU::id() != CPU::BSP)
 +        CPU::smp_barrier();
  
++    // Timer reset dito pelo Leonardo
++    Timer::reset();
      // Idle thread creation does not cause rescheduling (see Thread::constructor_epilogue)
      new (SYSTEM) Thread(Thread::Configuration(Thread::READY, Thread::IDLE), &Thread::idle);
  
@@ -5761,7 +6552,7 @@ index a88ebe4..ace67dc 100644
      // The installation of the scheduler timer handler does not need to be done after the
      // creation of threads, since the constructor won't call reschedule() which won't call
      // dispatch that could call timer->reset()
-@@ -52,8 +60,9 @@ void Thread::init()
+@@ -52,8 +62,9 @@ void Thread::init()
      CPU::smp_barrier();
  
      // Transition from CPU-based locking to thread-based locking
@@ -5773,8 +6564,21 @@ index a88ebe4..ace67dc 100644
  }
  
  __END_SYS
+diff --git a/src/init/init_application.cc b/src/init/init_application.cc
+index 95f0e89..b49a6c6 100644
+--- a/src/init/init_application.cc
++++ b/src/init/init_application.cc
+@@ -31,7 +31,7 @@ public:
+         if(Traits<System>::multiheap) { // heap in data segment arranged by SETUP
+             db<Init>(INF) << endl;
+             char * heap = (MMU::align_page(&_end) >= CPU::Log_Addr(Memory_Map::APP_DATA)) ? MMU::align_page(&_end) : CPU::Log_Addr(Memory_Map::APP_DATA); // ld is eliminating the data segment in some compilations, particularly for RISC-V, and placing _end in the code segment
+-            Application::_heap = new (&Application::_preheap[0]) Application_Heap(heap, HEAP_SIZE);
++            Application::_heap = new (&Application::_preheap[0]) Heap(heap, HEAP_SIZE);
+         } else {
+             db<Init>(INF) << "adding all free memory to the unified system's heap!" << endl;
+             for(unsigned int frames = MMU::allocable(); frames; frames = MMU::allocable())
 diff --git a/src/init/init_end.cc b/src/init/init_end.cc
-index cb40b94..661ca46 100644
+index cb40b94..0c7709f 100644
 --- a/src/init/init_end.cc
 +++ b/src/init/init_end.cc
 @@ -16,6 +16,8 @@ public:
@@ -5786,7 +6590,7 @@ index cb40b94..661ca46 100644
          if(!Traits<System>::multithread) {
              CPU::int_enable();
              return;
-@@ -28,11 +30,12 @@ public:
+@@ -28,17 +30,20 @@ public:
          // It will return MAIN for CPU0 and IDLE for the others
          Thread * first = Thread::self();
  
@@ -5800,6 +6604,14 @@ index cb40b94..661ca46 100644
  
          // Interrupts have been disabled at Thread::init() and will be reenabled by CPU::Context::load()
          // but we first reset the timer to avoid getting a time interrupt during load()
+         if(Traits<Timer>::enabled)
+             Timer::reset();
+ 
++        // Barreira dita pelo Leonardo
++        CPU::smp_barrier();
+         first->_context->load();
+     }
+ };
 diff --git a/src/init/init_system.cc b/src/init/init_system.cc
 index 00e6b5f..c1ef90c 100644
 --- a/src/init/init_system.cc
@@ -5844,3 +6656,16 @@ index be575a0..1cda4cf 100644
      db<Setup>(INF) << "Setup::pc=" << CPU::pc() << endl;
      db<Setup>(INF) << "Setup::sp=" << CPU::sp() << endl;
      db<Setup>(INF) << "Setup::cr0=" << reinterpret_cast<void *>(CPU::cr0()) << endl;
+diff --git a/src/utility/heap.cc b/src/utility/heap.cc
+index 036f0e2..daada6c 100644
+--- a/src/utility/heap.cc
++++ b/src/utility/heap.cc
+@@ -4,7 +4,7 @@
+ 
+ __BEGIN_UTIL
+ 
+-void Heap::out_of_memory(unsigned long bytes)
++void Heap_Imp::out_of_memory(unsigned long bytes)
+ {
+     db<Heaps, System>(ERR) << "Heap::alloc(this=" << this << "): out of memory while allocating " << bytes << " bytes!" << endl;
+ }
