@@ -99,13 +99,13 @@ bool EAMQ::initialized = false;
 EAMQ::EAMQ(int p) : RT_Common(p), _is_recent_insertion(false), _personal_statistics{}, _behind_of(nullptr), _periodic(false)
 {
     EAMQ::initialize_current_queue();
+//    if (Traits<System>::RUN_TO_HALT) {
+//        _queue_eamq = 0;
+//        return;
+//    }
+
     // Coloca thread MAIN e IDLE na mesma fila (fila com menor frequência possível)
     // prioridade igual a LOW ou mais baixos
-    if (Traits<System>::RUN_TO_HALT) {
-        _queue_eamq = 0;
-        return;
-    }
-
     if (p == MAIN || p == IDLE || p >= LOW) {
         if (p == MAIN) {db<PEAMQ>(WRN) << "CRIOU MAIN" << endl;}
         if (p == IDLE) {db<PEAMQ>(WRN) << "CRIOU IDLE" << endl;}
