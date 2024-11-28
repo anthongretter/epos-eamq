@@ -384,6 +384,10 @@ public:
 
         Microsecond job_execution_time; // tempo de execução real acumulada da tarefa
         Tick job_enter_tick;            // tempo de entrada do ultimo job
+
+        // P6 : variaveis para cada thread sobre branch miss e cache miss
+        long long branch_miss; // estatisticas do PMU
+        long long cache_miss;  // estatisticas do PMU
     };
 
     void handle(Event event);

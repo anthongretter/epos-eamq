@@ -169,25 +169,20 @@ void EAMQ::handle(Event event) {
     }
     if (event & CREATE) {
         db<PEAMQ>(WRN) << "CRIANDO THREAD" << endl;
-        // for (int q = 0; q < QUEUES; q++) {
-        //     db<EAMQ>(WRN) << "CPU " << CPU::id() << " Fila " << q << ": ";
-        //     for (auto it = Thread::scheduler()->end(q); &(*it) != nullptr; it = it->prev()) {
-        //         db<EAMQ>(WRN) << it << " ";
-        //     }
-        //     db<EAMQ>(WRN) << "CPU " << CPU::id() << " CHOSEN: " << Thread::scheduler()->chosen_now(q);
-        // db<EAMQ>(WRN) << endl;
-        // }
-
-        // db<PEAMQ>(WRN) << Thread::scheduler()->occupied_queues() << endl;
-        // for (unsigned long q = 0; q < QUEUES; q++) {
-        //     db<PEAMQ>(WRN) << "Chosen: " << Thread::scheduler()->chosen_now(q) << endl;
-        //     db<PEAMQ>(WRN) << "Core" << q << " tem " << Thread::scheduler()->size(q) << endl;
-        // }
-        // db<PEAMQ>(WRN) << endl;
+        // P6 : inicializa estatisticas do PMU
+        // _personal_statistics.branch_miss = 0;
+        // _personal_statistics.cache_miss = 0;
 
     }
     if (event & UPDATE) {
         db<PEAMQ>(WRN) << "UPDATE" <<endl;
+        // P6 : coleta de dados do PMU
+        // _personal_statistics.branch_miss += PMU::read(3);
+        // _personal_statistics.cache_miss += PMU::read(4);
+        // PMU::reset(3);
+        // PMU::reset(4);
+        // PMU::start(3);
+        // PMU::start(4);
         // Depois da proxima ser definida e avisada de sua entrada, podemos desproteger as recem entradas
         // Todas as threads recebem um evento UPDATE
         _is_recent_insertion = false;
@@ -356,7 +351,7 @@ int EAMQ::rank_eamq() {
     }
     // Não encontrou lugar na fila e vai inserir na sub-fila com maior frequencia
     db<EAMQ>(TRC) << "Thread not inserted in any queue" << endl;
-    _priority = 0;
+    _priority = 0; // talvez trocar pro HIGH ?
     set_queue(0);
     return 0;
 }

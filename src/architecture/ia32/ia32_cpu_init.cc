@@ -25,6 +25,14 @@ void CPU::init()
     // Initialize the PMU	
     if(Traits<PMU>::enabled)
         PMU::init();
+        // P6 : evento cache miss e branch miss, talvez precisa de branch instructions e cache hit para calculo?
+        // PMU::config(4,29); //Cache miss
+        // PMU::config(3,14); //Branch miss
+        // PMU::start(4);
+        // PMU::start(3);
+        // PMU::reset(4);
+        // PMU::reset(3);
+
         // P6 : adicionando start counters (PDF - Leonardo)
         PMU::config(2,2);
         PMU::config(1,1);
