@@ -23,15 +23,18 @@ void CPU::init()
     }
 
     // Initialize the PMU	
-    if(Traits<PMU>::enabled)
+    if(Traits<PMU>::enabled) {
         PMU::init();
         // P6 : evento cache miss e branch miss, talvez precisa de branch instructions e cache hit para calculo?
-        // PMU::config(4,29); //Cache miss
-        // PMU::config(3,14); //Branch miss
-        // PMU::start(4);
-        // PMU::start(3);
-        // PMU::reset(4);
-        // PMU::reset(3);
+//        PMU::config(4,29);    // Cache miss
+        PMU::config(4,196);     // Branches
+        PMU::config(3,197);     // Branch miss
+//        PMU::start(4);
+        PMU::start(4);
+        PMU::start(3);
+//        PMU::reset(4);
+        PMU::reset(4);
+        PMU::reset(3);
 
         // P6 : adicionando start counters (PDF - Leonardo)
         PMU::config(2,2);
@@ -43,6 +46,7 @@ void CPU::init()
         PMU::reset(2);
         PMU::reset(1);
         PMU::reset(0);
+    }
 }
 
 void CPU::smp_barrier_init(unsigned int cores) {

@@ -146,25 +146,22 @@ void EAMQ::handle(Event event) {
     if (event & CHANGE_QUEUE) {
         unsigned int last = current_queue_eamq();
         do {
-            // Pula para próxima fila
             EAMQ::next_queue();
             db<PEAMQ>(WRN) << "current_queue_eamq: " << current_queue_eamq() << endl;
         // Enquanto fila atual não vazia ou uma volta completa
         } while (Thread::scheduler()->empty() && (current_queue_eamq() != last));
         db<PEAMQ>(WRN) << "CPU " << CPU::id() << " prox: " << current_queue_eamq() << endl;
 
-        // Se for RUN_TO_HALT, não ajusta a frequência (100%)
-        // if (!Traits<System>::RUN_TO_HALT) {
+        // Ajustando a frequência conforme a fila
+        Hertz f = frequency_within(current_queue_eamq());
 
-            // Ajustando a frequência conforme a fila
-            Hertz f = frequency_within(current_queue_eamq());
-            CPU::clock(f);
-            
-            // So that IDLE doesnt spam this
-            if (last != current_queue_eamq()) {
-                db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue_eamq() << endl;
-            }
-        // }
+        // P6: Nao ajustavel com o uso da PMU
+        // CPU::clock(f);
+
+        // So that IDLE doesnt spam this
+        if (last != current_queue_eamq()) {
+            db<EAMQ>(TRC) << "[!!!] Operating next queue, in frequency: " << f / 1000000 << "Mhz " << "Queue: " << current_queue_eamq() << endl;
+        }
         db<PEAMQ>(WRN) << "HEAD: " << Thread::scheduler()->head()->object() << ", TAIL: " << Thread::scheduler()->tail()->object() << endl;
     }
     if (event & CREATE) {
@@ -209,9 +206,13 @@ void EAMQ::handle(Event event) {
     }
     if (periodic() && (event & LEAVE)) {
         db<PEAMQ>(WRN) << "LEAVE PERIODICO" <<endl;
+
         // Guarda o tempo que passou depois que começou a execução da tarefa
-        Microsecond in_cpu = time(elapsed() - _personal_statistics.job_enter_tick);
+        Microsecond in_cpu = time(PMU::read(1) - _personal_statistics.job_enter_tick);
+        PMU::reset(1);
+
         _personal_statistics.job_execution_time += in_cpu;
+
         for (unsigned int q = 0; q < QUEUES; q++)
         {
             // Reduz o tempo executado deste quantum, transformando Tick em Microsecond
@@ -227,7 +228,7 @@ void EAMQ::handle(Event event) {
     // Quando uma thread periodica começa a tarefa
     if (periodic() && (event & ENTER)) {
         db<PEAMQ>(WRN) << "ENTER PERIODICO" <<endl;
-        _personal_statistics.job_enter_tick = elapsed();
+        _personal_statistics.job_enter_tick = PMU::read(1);
     }
     // Quando uma thread foi liberado para executar tarefa
     if (periodic() && (event & JOB_RELEASE)) {

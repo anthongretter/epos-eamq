@@ -363,6 +363,8 @@ public:
     static const unsigned int Q = Traits<Thread>::QUANTUM;
     static const bool dynamic = true;
 
+    typedef PMU_Common::Count Count;
+
 public:
     EAMQ(int p = APERIODIC);
     EAMQ(Microsecond p, Microsecond d = SAME, Microsecond c = UNKNOWN);
@@ -382,10 +384,11 @@ public:
         Microsecond job_estimated_et[QUEUES];   // tempo de execução estimado em cada frequencia dada media
         Microsecond average_et[QUEUES];         // tempo de execução média ponderada
 
-        Microsecond job_execution_time; // tempo de execução real acumulada da tarefa
-        Tick job_enter_tick;            // tempo de entrada do ultimo job
+        Microsecond job_execution_time;  // tempo de execução real acumulada da tarefa
+        Count job_enter_tick;            // tempo de entrada do ultimo job
 
         // P6 : variaveis para cada thread sobre branch miss e cache miss
+        long long branches;
         long long branch_miss; // estatisticas do PMU
         long long cache_miss;  // estatisticas do PMU
     };
