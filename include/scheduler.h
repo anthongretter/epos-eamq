@@ -374,7 +374,7 @@ public:
         ASSURE_BEHIND = 1 << 6,
         CHANGE_QUEUE = 1 << 7,
         RESUME_THREAD = 1 << 8,
-        // LEAVING_QUEUE = 1 << 9   // Nao implementado ainda
+        LEAVING_QUEUE = 1 << 9   // Nao implementado ainda
     };
 
     struct Personal_Statistics
@@ -392,6 +392,7 @@ public:
         long long branches;    // estatisticas do PMU
         long long branch_miss; // estatisticas do PMU
         long long cache_miss;  // estatisticas do PMU
+        long long instructions; 
     };
 
     // P6 : handle agora é virtual para ser reutilizado em PEAMQ
@@ -409,7 +410,8 @@ public:
     static const volatile unsigned int &current_queue_eamq() { return _current_queue[CPU::id()]; } // current global queue
     virtual void next_queue() { ++_current_queue[CPU::id()] %= QUEUES;}        // points to next global queue with threads
 
-protected:    
+protected:
+    void reset_pmu_personal_stats();
     void set_queue(unsigned int q) { _queue_eamq = q; };
 
     /* Em caso de 4 filas em relacao a frequencia maxima:
