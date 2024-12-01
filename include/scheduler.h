@@ -388,12 +388,13 @@ public:
         Count job_enter_tick;            // tempo de entrada do ultimo job
 
         // P6 : variaveis para cada thread sobre branch miss e cache miss
-        long long branches;
-        long long branch_miss; // estatisticas do PMU
-        long long cache_miss;  // estatisticas do PMU
+        // long long branches;
+        // long long branch_miss; // estatisticas do PMU
+        // long long cache_miss;  // estatisticas do PMU
     };
 
-    void handle(Event event);
+    // P6 : handle agora é virtual para ser reutilizado em PEAMQ
+    virtual void handle(Event event);
 
     Personal_Statistics personal_statistics() { return _personal_statistics; }
 
@@ -497,16 +498,39 @@ class PEAMQ : public Variable_Queue_Scheduler, public EAMQ
 public: 
     static const unsigned int QUEUES_CORES = Traits<Machine>::CPUS;
 
+    // P6 : Core Statistics para threads periódicas
     PEAMQ(int p = APERIODIC)
     : Variable_Queue_Scheduler(((p == IDLE) || (p == MAIN)) ? CPU::id() : ++_next_queue %= CPU::cores()), EAMQ(p) {}
     PEAMQ(const Microsecond & p, const Microsecond & d = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY)
-    : Variable_Queue_Scheduler((cpu != ANY) ? cpu : evaluate()), EAMQ(p, d, c) {}
+    : Variable_Queue_Scheduler((cpu != ANY) ? cpu : evaluate()), EAMQ(p, d, c) {
+        for (unsigned int i = 0; i < QUEUES_CORES; i++) {
+            _core_statistics.branch_misses[i] = 0;
+            _core_statistics.cache_misses[i] = 0;
+            _core_statistics.instruction_retired[i] = 0;
+            _core_statistics.cache_hit[i] = 0;
+            _core_statistics.branch_instruction[i] = 0;
+        }
+    }
 
     using Variable_Queue_Scheduler::queue;
     static unsigned int current_queue() { return CPU::id(); }
 
+    struct Core_Statistics 
+    {
+        unsigned long long branch_misses[QUEUES_CORES];
+        unsigned long long cache_misses[QUEUES_CORES];
+        unsigned long long instruction_retired[QUEUES_CORES];
+        unsigned long long cache_hit[QUEUES_CORES];
+        unsigned long long branch_instruction[QUEUES_CORES];
+    };
+
+    Core_Statistics core_Statistics() { return _core_statistics; }
+    
+    void handle(Event event) override;
+
 protected:
     volatile unsigned int evaluate();
+    Core_Statistics _core_statistics;
 
 };
 

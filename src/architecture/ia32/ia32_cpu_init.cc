@@ -26,13 +26,18 @@ void CPU::init()
     if(Traits<PMU>::enabled) {
         PMU::init();
         // P6 : evento cache miss e branch miss, talvez precisa de branch instructions e cache hit para calculo?
-//        PMU::config(4,29);    // Cache miss
-        PMU::config(4,196);     // Branches
-        PMU::config(3,197);     // Branch miss
-//        PMU::start(4);
+        PMU::config(6,30);     // Cache miss
+        PMU::config(5,29);     // Cache hit
+        PMU::config(4,11);     // Branches
+        PMU::config(3,15);     // Branch miss
+
+        PMU::start(6);
+        PMU::start(5);
         PMU::start(4);
         PMU::start(3);
-//        PMU::reset(4);
+
+        PMU::reset(6);
+        PMU::reset(5);
         PMU::reset(4);
         PMU::reset(3);
 
@@ -40,9 +45,11 @@ void CPU::init()
         PMU::config(2,2);
         PMU::config(1,1);
         PMU::config(0,0);
+
         PMU::start(2);
         PMU::start(1);
         PMU::start(0);
+
         PMU::reset(2);
         PMU::reset(1);
         PMU::reset(0);

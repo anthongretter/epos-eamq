@@ -185,6 +185,24 @@ void EAMQ::handle(Event event) {
         _is_recent_insertion = false;
         _behind_of = nullptr;
     }
+    if (event & FINISH) {
+        // precisa resetar até para aperiodic para não coletar dados junto com aperiodic (limpar dados)
+        // P6 : resetar PMU 
+        // PMU::reset(0); // nao estamos usando o canal 0
+        PMU::reset(1);
+        PMU::reset(2);
+        PMU::reset(3);
+        PMU::reset(4);
+        PMU::reset(5);
+        PMU::reset(6);
+        // P6 : start PMU
+        PMU::start(1);
+        PMU::start(2);
+        PMU::start(3);
+        PMU::start(4);
+        PMU::start(5);
+        PMU::start(6);
+    }
     // Quando acontece prempcao do quantum
     if (periodic() && (event & UPDATE)) {
         if (Q > Time_Base(_personal_statistics.remaining_deadline)) {
@@ -258,6 +276,22 @@ void EAMQ::handle(Event event) {
             // Timer_Common::time(_personal_statistics.average_et[q], frequency_within(q));
         }
         _personal_statistics.job_execution_time = 0;
+
+        // P6 : resetar PMU
+        // PMU::reset(0); // nao estamos usando o canal 0
+        PMU::reset(1);
+        PMU::reset(2);
+        PMU::reset(3);
+        PMU::reset(4);
+        PMU::reset(5);
+        PMU::reset(6);
+        // P6 : start PMU
+        PMU::start(1);
+        PMU::start(2);
+        PMU::start(3);
+        PMU::start(4);
+        PMU::start(5);
+        PMU::start(6);
     }
     if (periodic() && (event & ASSURE_BEHIND)) {
         db<EAMQ>(TRC) << "p: " << _priority << " visited for rerank (someone in front was inserted)" << endl;
@@ -268,6 +302,26 @@ void EAMQ::handle(Event event) {
             // Faz atualização de rank da thread que foi inserida chamando assure_behind
             _behind_of->link()->prev()->object()->for_all_behind(ASSURE_BEHIND);
         }
+    }
+    if (event & LEAVE) {
+        // P6 : coleta de dados do PMU
+        // _personal_statistics.branch_miss += PMU::read(3);
+        // _personal_statistics.cache_miss += PMU::read(4);
+        // P6 : resetar PMU
+        // PMU::reset(0); // nao estamos usando o canal 0
+        PMU::reset(1);
+        PMU::reset(2);
+        PMU::reset(3);
+        PMU::reset(4);
+        PMU::reset(5);
+        PMU::reset(6);
+        // P6 : start PMU
+        PMU::start(1);
+        PMU::start(2);
+        PMU::start(3);
+        PMU::start(4);
+        PMU::start(5);
+        PMU::start(6);
     }
 
     /* a = new Job()        -> JOB_RELEASE, CREATE
@@ -378,8 +432,18 @@ volatile unsigned int PEAMQ::evaluate()
     unsigned long long min = IDLE;
     unsigned int chosen_core = 0;
 
+    // avaliacao com dados da PMU que setam "pontos iniciais" para cada core
+
     for (unsigned int core = 0; core < CPU::cores(); core++)
     {
+        // avaliação com dados da PMU 
+        // branch miss rate = resulta em um valor sem casas decimais, por isso multiplicamos por 100
+        // unsigned long long branch_miss_rate = (_core_statistics.branch_miss[core]*100) / _core_statistics.branch_instruction[core];
+        // unsigned long long cache_miss_rate = (_core_statistics.cache_miss[core]*100) / _core_statistics.cache_hit[core] + _core_statistics.cache_miss[core];
+        // unsigned long long instruction_retired = _core_statistics.instruction_retired[core];
+
+        // ver em qual intervalo o core_rate se mantém para conseguir fazer a análise de quanto interferir nele com os dados da PMU
+
         unsigned long long core_rate = 0;
 
         for (unsigned int q = 0; q < QUEUES; q++)
@@ -404,6 +468,26 @@ volatile unsigned int PEAMQ::evaluate()
         }
     }
     return chosen_core;
+}
+
+void PEAMQ::handle(Event event) {
+    if (periodic() && (event & JOB_FINISH)) {
+        _core_statistics.instruction_retired[CPU::id()] += PMU::read(2);
+        _core_statistics.branch_misses[CPU::id()] += PMU::read(3);
+        _core_statistics.branch_instruction[CPU::id()] += PMU::read(4);
+        _core_statistics.cache_hit[CPU::id()] += PMU::read(5);
+        _core_statistics.cache_misses[CPU::id()] += PMU::read(6);
+    }
+    if (periodic() && (event & LEAVE)) {
+        _core_statistics.instruction_retired[CPU::id()] += PMU::read(2);
+        _core_statistics.branch_misses[CPU::id()] += PMU::read(3);
+        _core_statistics.branch_instruction[CPU::id()] += PMU::read(4);
+        _core_statistics.cache_hit[CPU::id()] += PMU::read(5);
+        _core_statistics.cache_misses[CPU::id()] += PMU::read(6);
+    }
+
+    // let EAMQ handle the rest and reset PMU
+    EAMQ::handle(event);
 }
 
 
