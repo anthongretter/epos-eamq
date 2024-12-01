@@ -228,6 +228,7 @@ void EAMQ::handle(Event event) {
         // Guarda o tempo que passou depois que começou a execução da tarefa
         Microsecond in_cpu = time(PMU::read(1) - _personal_statistics.job_enter_tick);
         PMU::reset(1);
+        PMU::start(1);
 
         _personal_statistics.job_execution_time += in_cpu;
 
@@ -433,14 +434,21 @@ volatile unsigned int PEAMQ::evaluate()
     unsigned int chosen_core = 0;
 
     // avaliacao com dados da PMU que setam "pontos iniciais" para cada core
+    unsigned long long most_instructions_retired = 0;
+    for (unsigned int core = 0; core < CPU::cores(); core++) {
+        if (_core_statistics.instruction_retired[core] > most_instructions_retired)
+            most_instructions_retired = _core_statistics.instruction_retired[core];
+    }
+    // normalizing the value to divide
+    most_instructions_retired /= 100;
 
     for (unsigned int core = 0; core < CPU::cores(); core++)
     {
         // avaliação com dados da PMU 
         // branch miss rate = resulta em um valor sem casas decimais, por isso multiplicamos por 100
-        // unsigned long long branch_miss_rate = (_core_statistics.branch_miss[core]*100) / _core_statistics.branch_instruction[core];
-        // unsigned long long cache_miss_rate = (_core_statistics.cache_miss[core]*100) / _core_statistics.cache_hit[core] + _core_statistics.cache_miss[core];
-        // unsigned long long instruction_retired = _core_statistics.instruction_retired[core];
+        unsigned long long branch_miss_rate = (_core_statistics.branch_misses[core]*100) / _core_statistics.branch_instruction[core];
+        unsigned long long cache_miss_rate = (_core_statistics.cache_misses[core]*100) / _core_statistics.cache_hit[core] + _core_statistics.cache_misses[core];
+        unsigned long long instruction_retired = _core_statistics.instruction_retired[core] / most_instructions_retired;
 
         // ver em qual intervalo o core_rate se mantém para conseguir fazer a análise de quanto interferir nele com os dados da PMU
 
@@ -461,6 +469,10 @@ volatile unsigned int PEAMQ::evaluate()
                 core_rate += last_element->object()->priority() - (((last_element->object()->priority() / 1000) * 125) * q);   // (1 - 0.125 x q)
             }
         }
+
+        long long pmu = branch_miss_rate + cache_miss_rate + instruction_retired; // ~ 300 max
+        core_rate = core_rate * pmu;
+
         if (core_rate < min)
         {
             min = core_rate;
@@ -472,11 +484,11 @@ volatile unsigned int PEAMQ::evaluate()
 
 void PEAMQ::handle(Event event) {
     if (periodic() && (event & JOB_FINISH)) {
-        _core_statistics.instruction_retired[CPU::id()] += PMU::read(2);
-        _core_statistics.branch_misses[CPU::id()] += PMU::read(3);
-        _core_statistics.branch_instruction[CPU::id()] += PMU::read(4);
-        _core_statistics.cache_hit[CPU::id()] += PMU::read(5);
-        _core_statistics.cache_misses[CPU::id()] += PMU::read(6);
+        // _core_statistics.instruction_retired[CPU::id()] += PMU::read(2);
+        // _core_statistics.branch_misses[CPU::id()] += PMU::read(3);
+        // _core_statistics.branch_instruction[CPU::id()] += PMU::read(4);
+        // _core_statistics.cache_hit[CPU::id()] += PMU::read(5);
+        // _core_statistics.cache_misses[CPU::id()] += PMU::read(6);
     }
     if (periodic() && (event & LEAVE)) {
         _core_statistics.instruction_retired[CPU::id()] += PMU::read(2);

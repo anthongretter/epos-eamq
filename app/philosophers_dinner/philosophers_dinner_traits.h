@@ -111,7 +111,7 @@ template<> struct Traits<System>: public Traits<Build>
     static const unsigned int STACK_SIZE = Traits<Machine>::STACK_SIZE;
     static const unsigned int HEAP_SIZE = (Traits<Application>::MAX_THREADS + Traits<Build>::CPUS) * Traits<Application>::STACK_SIZE;
 
-    static const unsigned int RUN_TO_HALT = true;
+    static const unsigned int RUN_TO_HALT = false;
 };
 
 template<> struct Traits<Thread>: public Traits<Build>
