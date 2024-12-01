@@ -34,7 +34,7 @@ int main()
     cout << "MAIN: Hello world!\n" << endl;
 
     const int N_THREADS_A = 24; // Aperiodic
-    const int N_THREADS_P = 3; // Periodic
+    const int N_THREADS_P = 10; // Periodic
 
     const Thread::Criterion CRITS[3]{Thread::LOW, Thread::NORMAL, Thread::HIGH};
 

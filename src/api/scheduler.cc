@@ -360,27 +360,6 @@ int EAMQ::rank_eamq() {
     unsigned int i = QUEUES - 1;
     unsigned int j = 0;
 
-    // Com as estatisticas de PMU
-    if (_personal_statistics.branches && _personal_statistics.cache_hit) {
-        // branch miss rate = branches / branch miss
-        unsigned long long bm_rate = (_personal_statistics.branch_miss*100) / _personal_statistics.branches;
-        // cache miss rate = cache miss / (cache miss + cache hit)
-        unsigned long long cm_rate = (_personal_statistics.cache_miss*100) / (_personal_statistics.cache_hit + _personal_statistics.cache_miss);
-        
-        if (bm_rate >= 30) {         // se tiver mais que 30% de branch miss
-            if (_queue_eamq > 0)
-                i = _queue_eamq - 1; // avaliar subfilas com frequencia maior que atual
-            else
-                i = 0;
-        }
-        if (cm_rate >= 20) {        // se tiver mais que 20% de cache miss
-            if (_queue_eamq < QUEUES-1) 
-                j = _queue_eamq + 1; // avaliar subfilas com frequencia menor que atual
-            else
-                j = QUEUES-1;
-        }
-    }
-
     // Baseado em Choosen não saindo da fila
     for (; i >= j; i--) {
         // tempo de execução restante estimado
@@ -421,13 +400,6 @@ int EAMQ::rank_eamq() {
         db<EAMQ>(TRC) << "CWT: " << cwt_profile << ", Time to run: " << available_time_to_run << ", IDLE time: " << idle_time << endl;
 
         if (idle_time >= 0) {
-            if (_queue_eamq != i) {
-                // Precisamos jogar um evento para que o PEAMQ saiba que uma thread esta mudando de fila
-                // Então ele vai salvar os dados coletados da PMU por aquela thread 
-                handle(LEAVING_QUEUE);
-                // Se for alterar de fila/'frequência', precisamos resetar os dados para coletar novos
-                reset_pmu_personal_stats();
-            }
             set_queue(i);
             _priority = cwt_profile;
             db<EAMQ>(TRC) << "Thread inserted in queue " << i << " with priority " << cwt_profile << endl;
@@ -552,7 +524,7 @@ void PEAMQ::handle(Event event) {
         _core_statistics.cache_hit[CPU::id()] += PMU::read(5);
         _core_statistics.cache_misses[CPU::id()] += PMU::read(6);
     }
-    if (periodic() && ((event & FINISH) || (event & LEAVING_QUEUE))) {
+    if (periodic() && (event & FINISH)) {
         _core_statistics.branch_misses[CPU::id()] -= _personal_statistics.branch_miss;
         _core_statistics.branch_instruction[CPU::id()] -= _personal_statistics.branches;
         _core_statistics.cache_hit[CPU::id()] -= _personal_statistics.cache_hit;
