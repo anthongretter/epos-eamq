@@ -30,7 +30,7 @@ template <>
 struct Traits<Debug> : public Traits<Build>
 {
     static const bool error = true;
-    static const bool warning = false;
+    static const bool warning = true;
     static const bool info = false;
     static const bool trace = false;
 };
@@ -38,7 +38,7 @@ struct Traits<Debug> : public Traits<Build>
 template <>
 struct Traits<AAA> : public Traits<Build>
 {
-    static const bool debugged = false;
+    static const bool debugged = true;
 };
 
 template <>

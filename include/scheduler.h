@@ -388,9 +388,10 @@ public:
         Count job_enter_tick;            // tempo de entrada do ultimo job
 
         // P6 : variaveis para cada thread sobre branch miss e cache miss
-        // long long branches;
-        // long long branch_miss; // estatisticas do PMU
-        // long long cache_miss;  // estatisticas do PMU
+        long long cache_hit;   // estatisticas do PMU
+        long long branches;    // estatisticas do PMU
+        long long branch_miss; // estatisticas do PMU
+        long long cache_miss;  // estatisticas do PMU
     };
 
     // P6 : handle agora é virtual para ser reutilizado em PEAMQ
