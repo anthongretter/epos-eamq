@@ -11,10 +11,10 @@ Mutex cout_m;
 
 int bruh(int n)
 {
+    Alarm::delay(100000 + (int(Random::random()) % 10000));     // 0.1s - 0.2s
     cout_m.lock();
     cout << "CPU: " << CPU::id() << " bruh - " << n << endl;
     cout_m.unlock();
-    Alarm::delay(500000 + (int(Random::random()) % 10000));
     return 0;
 }
 
@@ -24,7 +24,7 @@ int poggers(int n)
         cout_m.lock();
         cout << "CPU: " << CPU::id() << " poggers - " << n << endl;
         cout_m.unlock();
-        Alarm::delay(1000000 + (int(Random::random()) % 10000));
+        Alarm::delay(100000 + (int(Random::random()) % 10000));     // 0.1s - 0.2s
     } while (Periodic_Thread::wait_next());
     return 0;
 }
@@ -34,7 +34,7 @@ int main()
     cout << "MAIN: Hello world!\n" << endl;
 
     const int N_THREADS_A = 24; // Aperiodic
-    const int N_THREADS_P = 10; // Periodic
+    const int N_THREADS_P = 3; // Periodic
 
     const Thread::Criterion CRITS[3]{Thread::LOW, Thread::NORMAL, Thread::HIGH};
 
@@ -44,8 +44,8 @@ int main()
     {
         // Thread periodic
         auto conf = Periodic_Thread::Configuration(
-            500000 + (int(Random::random()) % 10000),        // periodo
-            Periodic_Thread::SAME,          // deadline
+            500000 + (int(Random::random()) % 50000),            //   0.5s - 1s
+            (500000 + (int(Random::random()) % 50000)) * 10,     //   5s - 10s
             Periodic_Thread::UNKNOWN,
             Periodic_Thread::NOW,
             3

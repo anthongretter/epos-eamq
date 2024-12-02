@@ -597,6 +597,7 @@ public:
         MEM_LOAD_UOPS_RETIRED_L2_HIT 			= 0xd1 | (0x02 << 8),
         MEM_LOAD_UOPS_RETIRED_L3_HIT 			= 0xd1 | (0x04 << 8),
         MEM_LOAD_UOPS_RETIRED_HIT_LFB 			= 0xd1 | (0x40 << 8),
+        MEM_LOAD_UOPS_RETIRED_L1_MISS 			= 0xd1 | (0x08 << 8),
 
         XSNP_MISS 		                        = 0xd2 | (0x01 << 8),
         XSNP_HIT  		                        = 0xd2 | (0x02 << 8),

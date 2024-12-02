@@ -30,7 +30,7 @@ const Intel_Sandy_Bridge_PMU::Event Intel_Sandy_Bridge_PMU::_events[EVENTS] = {
     UNSUPORTED_EVENT,                   // INTERRUPTS,
 
     MEM_LOAD_UOPS_RETIRED_L1_HIT,       // L1_CACHE_HITS,
-    UNSUPORTED_EVENT,                   // L1_CACHE_MISSES,
+    MEM_LOAD_UOPS_RETIRED_L1_MISS,      // L1_CACHE_MISSES,
     UNSUPORTED_EVENT,                   // L1_DATA_CACHE_MISSES,
     L2_TRANS_L1D_WB,                    // L1_DATA_CACHE_WRITEBACKS,
     ICACHE_MISSES,                      // L1_INSTRUCTION_CACHE_MISSES,

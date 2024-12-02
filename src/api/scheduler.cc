@@ -123,6 +123,7 @@ EAMQ::EAMQ(Microsecond p, Microsecond d, Microsecond c) : RT_Common(PERIODIC, p,
 
     db<PEAMQ>(WRN) << "ranking with p: " << p << endl;
     d = (d ? d : p);
+    _deadline = d;
 
     //int unsigned rand = 3u + (unsigned(Random::random()) % 8u);
 
@@ -179,7 +180,7 @@ void EAMQ::handle(Event event) {
     if (event & FINISH) {
         // precisa resetar até para aperiodic para não coletar dados junto com aperiodic (limpar dados)
         // P6 : resetar PMU 
-        // PMU::reset(0); // nao estamos usando o canal 0
+        PMU::reset(0);
         PMU::reset(1);
         PMU::reset(2);
         PMU::reset(3);
@@ -187,6 +188,7 @@ void EAMQ::handle(Event event) {
         PMU::reset(5);
         PMU::reset(6);
         // P6 : start PMU
+        PMU::start(0);
         PMU::start(1);
         PMU::start(2);
         PMU::start(3);
@@ -217,9 +219,7 @@ void EAMQ::handle(Event event) {
         db<PEAMQ>(WRN) << "LEAVE PERIODICO" <<endl;
 
         // Guarda o tempo que passou depois que começou a execução da tarefa
-        Microsecond in_cpu = time(PMU::read(1) - _personal_statistics.job_enter_tick);
-        PMU::reset(1);
-        PMU::start(1);
+        Microsecond in_cpu = time(PMU::read(0));
 
         // Coletando dados de PMU 
         _personal_statistics.instructions += PMU::read(2);
@@ -245,11 +245,13 @@ void EAMQ::handle(Event event) {
     // Quando uma thread periodica começa a tarefa
     if (periodic() && (event & ENTER)) {
         db<PEAMQ>(WRN) << "ENTER PERIODICO" <<endl;
-        _personal_statistics.job_enter_tick = PMU::read(1);
+        PMU::reset(0);
+        PMU::start(0);
     }
     // Quando uma thread foi liberado para executar tarefa
     if (periodic() && (event & JOB_RELEASE)) {
         db<PEAMQ>(WRN) << "RELEASE PERIODICO" <<endl;
+        _personal_statistics.remaining_deadline = _deadline;
         _personal_statistics.job_execution_time = 0;
         rank_eamq();
     }
