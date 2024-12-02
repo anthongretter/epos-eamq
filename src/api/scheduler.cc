@@ -448,17 +448,16 @@ int EAMQ::estimate_rp_waiting_time(unsigned int q) {
     return rp_waiting_time;
 }
 
+PEAMQ::Core_Statistics PEAMQ::_core_statistics = {
+    /* branch_misses */       {0},
+    /* cache_misses */        {0},
+    /* instruction_retired */ {0},
+    /* cache_hit */           {0},
+    /* branch_instruction */  {0}
+};
+
 volatile unsigned int PEAMQ::evaluate()
 {
-    for (unsigned int i = 0; i < QUEUES_CORES; i++) {
-        
-        _core_statistics.branch_misses[i] = 0;
-        _core_statistics.cache_misses[i] = 0;
-        _core_statistics.instruction_retired[i] = 0;
-        _core_statistics.cache_hit[i] = 0;
-        _core_statistics.branch_instruction[i] = 0;
-    }
-
     unsigned long long min = IDLE;
     unsigned int chosen_core = 0;
 

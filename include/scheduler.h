@@ -505,15 +505,7 @@ public:
     PEAMQ(int p = APERIODIC)
     : Variable_Queue_Scheduler(((p == IDLE) || (p == MAIN)) ? CPU::id() : ++_next_queue %= CPU::cores()), EAMQ(p) {}
     PEAMQ(const Microsecond & p, const Microsecond & d = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY)
-    : Variable_Queue_Scheduler((cpu != ANY) ? cpu : evaluate()), EAMQ(p, d, c) {
-        for (unsigned int i = 0; i < QUEUES_CORES; i++) {
-            _core_statistics.branch_misses[i] = 0;
-            _core_statistics.cache_misses[i] = 0;
-            _core_statistics.instruction_retired[i] = 0;
-            _core_statistics.cache_hit[i] = 0;
-            _core_statistics.branch_instruction[i] = 0;
-        }
-    }
+    : Variable_Queue_Scheduler((cpu != ANY) ? cpu : evaluate()), EAMQ(p, d, c) {}
 
     using Variable_Queue_Scheduler::queue;
     static unsigned int current_queue() { return CPU::id(); }
@@ -527,13 +519,13 @@ public:
         unsigned long long branch_instruction[QUEUES_CORES];
     };
 
-    Core_Statistics core_Statistics() { return _core_statistics; }
+    static Core_Statistics core_Statistics() { return _core_statistics; }
     
     void handle(Event event) override;
 
 protected:
     volatile unsigned int evaluate();
-    Core_Statistics _core_statistics;
+    static Core_Statistics _core_statistics;
 
 };
 
