@@ -326,7 +326,7 @@ Thread * EAMQ::search_t_fitted(unsigned int q)
 
 int EAMQ::rank_eamq() {
     // Baseado em Choosen não saindo da fila
-    for (int i = QUEUES - 1; i >= 0; i--) {
+    for (unsigned int i = QUEUES - 1; i >= 0; i--) {
         // tempo de execução restante estimado
         int eet_remaining = _personal_statistics.remaining_et[i];
         
