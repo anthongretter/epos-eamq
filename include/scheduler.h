@@ -79,6 +79,7 @@ public:
     static const bool timed = false;
     static const bool dynamic = false;
     static const bool preemptive = true;
+    static const bool migration = false;
     static const unsigned int QUEUES = 1;
 
     // Runtime Statistics (for policies that don't use any; that's why its a union)
@@ -500,6 +501,8 @@ class PEAMQ : public Variable_Queue_Scheduler, public EAMQ
 {
 public: 
     static const unsigned int QUEUES_CORES = Traits<Machine>::CPUS;
+    // P7 : booleano para indicar se permite migrar thread ou não
+    static const bool migration = true;
 
     // P6 : Core Statistics para threads periódicas
     PEAMQ(int p = APERIODIC)
@@ -522,6 +525,7 @@ public:
     static Core_Statistics core_Statistics() { return _core_statistics; }
     
     void handle(Event event) override;
+    bool condition_migrate();
 
 protected:
     volatile unsigned int evaluate();

@@ -177,6 +177,25 @@ void EAMQ::handle(Event event) {
         _is_recent_insertion = false;
         _behind_of = nullptr;
     }
+    if (event & FINISH) {
+        // precisa resetar até para aperiodic para não coletar dados junto com aperiodic (limpar dados)
+        // P6 : resetar PMU 
+        PMU::reset(0);
+        PMU::reset(1);
+        PMU::reset(2);
+        PMU::reset(3);
+        PMU::reset(4);
+        PMU::reset(5);
+        PMU::reset(6);
+        // P6 : start PMU
+        PMU::start(0);
+        PMU::start(1);
+        PMU::start(2);
+        PMU::start(3);
+        PMU::start(4);
+        PMU::start(5);
+        PMU::start(6);
+    }
     // Quando acontece prempcao do quantum
     if (periodic() && (event & UPDATE)) {
         if (Q > Time_Base(_personal_statistics.remaining_deadline)) {
@@ -258,6 +277,22 @@ void EAMQ::handle(Event event) {
             // Timer_Common::time(_personal_statistics.average_et[q], frequency_within(q));
         }
         _personal_statistics.job_execution_time = 0;
+
+        // P6 : resetar PMU
+        // PMU::reset(0); // nao estamos usando o canal 0
+        PMU::reset(1);
+        PMU::reset(2);
+        PMU::reset(3);
+        PMU::reset(4);
+        PMU::reset(5);
+        PMU::reset(6);
+        // P6 : start PMU
+        PMU::start(1);
+        PMU::start(2);
+        PMU::start(3);
+        PMU::start(4);
+        PMU::start(5);
+        PMU::start(6);
     }
     if (periodic() && (event & ASSURE_BEHIND)) {
         db<EAMQ>(TRC) << "p: " << _priority << " visited for rerank (someone in front was inserted)" << endl;
@@ -274,16 +309,15 @@ void EAMQ::handle(Event event) {
         // _personal_statistics.branch_miss += PMU::read(3);
         // _personal_statistics.cache_miss += PMU::read(4);
         // P6 : resetar PMU
-        PMU::reset(0);
-        // PMU::reset(1);   Não estamos utilizando o canal 1 (UNHALTED_CORE_CYCLES)
+        // PMU::reset(0); // nao estamos usando o canal 0
+        PMU::reset(1);
         PMU::reset(2);
         PMU::reset(3);
         PMU::reset(4);
         PMU::reset(5);
         PMU::reset(6);
         // P6 : start PMU
-        PMU::start(0);
-        // PMU::start(1);
+        PMU::start(1);
         PMU::start(2);
         PMU::start(3);
         PMU::start(4);
@@ -325,8 +359,11 @@ Thread * EAMQ::search_t_fitted(unsigned int q)
 }
 
 int EAMQ::rank_eamq() {
+    unsigned int i = QUEUES - 1;
+    unsigned int j = 0;
+
     // Baseado em Choosen não saindo da fila
-    for (unsigned int i = QUEUES - 1; i >= 0; i--) {
+    for (; i >= j; i--) {
         // tempo de execução restante estimado
         int eet_remaining = _personal_statistics.remaining_et[i];
         
@@ -365,13 +402,6 @@ int EAMQ::rank_eamq() {
         db<EAMQ>(TRC) << "CWT: " << cwt_profile << ", Time to run: " << available_time_to_run << ", IDLE time: " << idle_time << endl;
 
         if (idle_time >= 0) {
-            if (_queue_eamq != i) {
-                // Precisamos jogar um evento para que o PEAMQ saiba que uma thread esta mudando de fila
-                // Então ele vai salvar os dados coletados da PMU por aquela thread 
-                handle(LEAVING_QUEUE);
-                // Se for alterar de fila/'frequência', precisamos resetar os dados para coletar novos
-                reset_pmu_personal_stats();
-            }
             set_queue(i);
             _priority = cwt_profile;
             db<EAMQ>(TRC) << "Thread inserted in queue " << i << " with priority " << cwt_profile << endl;
@@ -504,6 +534,14 @@ void PEAMQ::handle(Event event) {
     }
     // let EAMQ handle the rest and reset PMU
     EAMQ::handle(event);
+}
+
+bool PEAMQ::condition_migrate() {
+    /* Pensar numa condição ainda
+        - Usar cache miss como condição de migração, mas qual porcentagem?
+        - Não sei se vale a pena usar branch miss...
+        - Para não ficar cada dispatch executando isso, melhor colocar um condição de periodo?
+    */
 }
 
 

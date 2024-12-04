@@ -422,6 +422,19 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
             prev->criterion().handle(Criterion::CHARGE | Criterion::LEAVE);
             for_all_threads(Criterion::UPDATE);
             next->criterion().handle(Criterion::AWARD | Criterion::ENTER);
+            // P7 : se migração é ativo e condição para migrar for satisfeito
+            // if (Criterion::migration && next->criterion().condition_migrate()) {
+            //     // não sei se é melhor alterar evaluate para receber um parametro para não escolher mesmo core...
+            //     next->criterion().queue(Criterion::evaluate()); // avalia qual core melhor e troca
+            //     next->criterion().rank_eamq();                  // atribui novo rank no novo core
+            //     next = _scheduler.choose_another();             // escolhe novo proximo
+            // }
+            // OU
+            // if (Criterion::migration) { // && condicao por certo periodo de tempo? (tipo 10ms ou 100ms?)
+            //     for_all_threads(Criterion::MIGRATE); // não sei se é boa fazer de todos threads
+            //     // fazer analise de migração em todos thread
+            // }
+            // Também podemos colocar no idle() em vez de dipatch() -> apenas quando o sistema detecta que um núcleo está ocioso ou subutilizado.
         }
 
         if (prev->_state == RUNNING) {
