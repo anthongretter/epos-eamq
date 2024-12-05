@@ -394,6 +394,9 @@ public:
         long long branch_miss; // estatisticas do PMU
         long long cache_miss;  // estatisticas do PMU
         long long instructions; 
+
+        // P7 : inicialmente false para todos 
+        bool migrate = false;
     };
 
     // P6 : handle agora é virtual para ser reutilizado em PEAMQ
@@ -520,15 +523,19 @@ public:
         unsigned long long instruction_retired[QUEUES_CORES];
         unsigned long long cache_hit[QUEUES_CORES];
         unsigned long long branch_instruction[QUEUES_CORES];
+
+        // P7 : core com mais nivel de utilização 
+        unsigned int min_core;
+        unsigned int max_core;
     };
 
     static Core_Statistics core_Statistics() { return _core_statistics; }
     
     void handle(Event event) override;
-    bool condition_migrate();
+    bool migrate();
 
 protected:
-    volatile unsigned int evaluate();
+    volatile unsigned int evaluate(bool max_core=false);
     static Core_Statistics _core_statistics;
 
 };

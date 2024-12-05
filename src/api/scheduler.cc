@@ -456,10 +456,12 @@ PEAMQ::Core_Statistics PEAMQ::_core_statistics = {
     /* branch_instruction */  {0}
 };
 
-volatile unsigned int PEAMQ::evaluate()
+volatile unsigned int PEAMQ::evaluate(bool max_core)
 {
     unsigned long long min = IDLE;
     unsigned int chosen_core = 0;
+    unsigned long long max = 0;
+    unsigned int max_core_id = 0;
 
     // avaliacao com dados da PMU que setam "pontos iniciais" para cada core
     unsigned long long most_instructions_retired = 0;
@@ -510,10 +512,20 @@ volatile unsigned int PEAMQ::evaluate()
         core_rate = core_rate * pmu;
         if (core_rate < min)
         {
+            // P7 : coletar o maximo também 
+            if (max_core) {
+                if (core_rate > max) {
+                    max = core_rate;
+                    max_core_id = core;
+                }
+            }
             min = core_rate;
             chosen_core = core;
         }
     }
+    if (max_core) {
+        return max_core_id;
+    } 
     return chosen_core;
 }
 
@@ -524,6 +536,25 @@ void PEAMQ::handle(Event event) {
         _core_statistics.branch_instruction[CPU::id()] += PMU::read(4);
         _core_statistics.cache_hit[CPU::id()] += PMU::read(5);
         _core_statistics.cache_misses[CPU::id()] += PMU::read(6);
+
+        // P7 : analisando porcentagem e colocando se necessário migrar
+        unsigned int cm_rate = _core_statistics.cache_misses[CPU::id()]*100 / (_core_statistics.cache_misses[CPU::id()] + _core_statistics.cache_hit[CPU::id()]);
+        if (!_personal_statistics.migrate) {
+            // Só coloquei um número, talvez melhor trocar
+            if (cm_rate >= 50) 
+                _personal_statistics.migrate = true;
+
+        } else {
+            if (cm_rate < 50)
+                _personal_statistics.migrate = false;
+        }
+
+        // P7 : identificar Core menos e mais com score 
+        unsigned int id_max = ANY;
+        unsigned long long aux = ANY;
+        _core_statistics.min_core = evaluate();
+        _core_statistics.max_core = evaluate(true);
+
     }
     if (periodic() && (event & FINISH)) {
         _core_statistics.branch_misses[CPU::id()] -= _personal_statistics.branch_miss;
@@ -536,12 +567,18 @@ void PEAMQ::handle(Event event) {
     EAMQ::handle(event);
 }
 
-bool PEAMQ::condition_migrate() {
-    /* Pensar numa condição ainda
-        - Usar cache miss como condição de migração, mas qual porcentagem?
-        - Não sei se vale a pena usar branch miss...
-        - Para não ficar cada dispatch executando isso, melhor colocar um condição de periodo?
-    */
+// P7 : função ativado no thread::idle(), verifica qual core cada thread vai migrar
+bool PEAMQ::migrate() {
+    if(_core_statistics.min_core != ANY && _core_statistics.max_core != ANY) {
+        // se atual core é o que está sendo mais utilizado e min diferente de max
+        if(_core_statistics.max_core == CPU::id() && _core_statistics.min_core != _core_statistics.max_core) {
+            return true;
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
 }
 
 
