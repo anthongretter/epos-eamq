@@ -427,6 +427,7 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
                 // não sei se é melhor alterar evaluate para receber um parametro para não escolher mesmo core...
                 next->criterion().queue(next->criterion().core_Statistics().min_core); // avalia qual core melhor e troca
                 next->criterion().rank_eamq();                  // atribui novo rank no novo core
+                next->next->criterion().reset_pmu_personal_stats(); // resetar as estatisticas
                 next = _scheduler.choose_another();             // escolhe novo proximo
             }
             // OU

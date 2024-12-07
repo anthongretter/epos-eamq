@@ -430,6 +430,7 @@ void EAMQ::reset_pmu_personal_stats() {
     _personal_statistics.branches = 0;
     _personal_statistics.cache_hit = 0;
     _personal_statistics.instructions = 0;
+    _personal_statistics.migrate = false;
 }
 
 int EAMQ::estimate_rp_waiting_time(unsigned int q) {
@@ -538,15 +539,17 @@ void PEAMQ::handle(Event event) {
         _core_statistics.cache_misses[CPU::id()] += PMU::read(6);
 
         // P7 : analisando porcentagem e colocando se necessário migrar
-        unsigned int cm_rate = _core_statistics.cache_misses[CPU::id()]*100 / (_core_statistics.cache_misses[CPU::id()] + _core_statistics.cache_hit[CPU::id()]);
-        if (!_personal_statistics.migrate) {
-            // Só coloquei um número, talvez melhor trocar
-            if (cm_rate >= 50) 
-                _personal_statistics.migrate = true;
+        if (_core_statistics.cache_hit[CPU::id()]) {
+            unsigned int cm_rate = _core_statistics.cache_misses[CPU::id()]*100 / (_core_statistics.cache_misses[CPU::id()] + _core_statistics.cache_hit[CPU::id()]);
+            if (!_personal_statistics.migrate) {
+                // Só coloquei um número, talvez melhor trocar
+                if (cm_rate >= 50) 
+                    _personal_statistics.migrate = true;
 
-        } else {
-            if (cm_rate < 50)
-                _personal_statistics.migrate = false;
+            } else {
+                if (cm_rate < 50)
+                    _personal_statistics.migrate = false;
+            }
         }
 
         // P7 : identificar Core menos e mais com score 
