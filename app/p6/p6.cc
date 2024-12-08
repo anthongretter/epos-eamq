@@ -11,7 +11,7 @@ Mutex cout_m;
 
 int bruh(int n)
 {
-    int wt = 1000000 + (unsigned(Random::random()) % 2000000);      // 1s - 3s
+    int wt = 3000000 + (unsigned(Random::random()) % 5000000);      // 3s - 8s
     cout_m.lock();
     cout << "CPU: " << CPU::id() << " bruh - " << n << ": vou esperar " << wt / 1000000  << "s" << endl;
     cout_m.unlock();
@@ -28,17 +28,18 @@ int poggers(int n)
         cout_m.lock();
         cout << "CPU: " << CPU::id() << " poggers - " << n << endl;
         cout_m.unlock();
+
         const int size = 1000000;  // Adjust size as needed
         volatile int arr[size];
 
-        // Access memory with a large stride to cause cache misses
-        for (int i = 0; i < size; i += (unsigned(Random::random()) % 10)) {  // random stride
-            arr[i] = (unsigned(Random::random()) % size);
+        // grandes pulos de acesso para causar cache miss
+        for (int i = 0; i < size; i += (unsigned(Random::random()) % 100)) {
+            // esconde surpresa
+            arr[i] = 42;
         }
-        volatile int aleatorio = arr[(unsigned(Random::random()) % size)];
-//        Alarm::delay(100000 + (unsigned(Random::random()) % 10000));     // 0.1s - 0.2s
+
         cout_m.lock();
-        cout << "CPU: " << CPU::id() << " poggers - " << n << ": oq achei: " << aleatorio << ": bye!" << endl;
+        cout << "CPU: " << CPU::id() << " poggers - " << n << " ACHOU: " << arr[unsigned(Random::random()) % size] << endl;
         cout_m.unlock();
     } while (Periodic_Thread::wait_next());
     return 0;
@@ -49,7 +50,7 @@ int main()
     cout << "MAIN: Hello world!\n" << endl;
 
     const int N_THREADS_A = 0; // Aperiodic
-    const int N_THREADS_P = 1; // Periodic
+    const int N_THREADS_P = 4; // Periodic
 
     const Thread::Criterion CRITS[3]{Thread::LOW, Thread::NORMAL, Thread::HIGH};
 
@@ -60,7 +61,7 @@ int main()
         // Thread periodic
         auto conf = Periodic_Thread::Configuration(
             500000 + (unsigned(Random::random()) % 500000),            //   0.5s - 1s
-            (500000 + (unsigned(Random::random()) % 500000)) * 1000,     //   500s - 1000s
+            (500000 + (unsigned(Random::random()) % 500000)) * 4,
             Periodic_Thread::UNKNOWN,
             Periodic_Thread::NOW,
             10

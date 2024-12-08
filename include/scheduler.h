@@ -537,6 +537,7 @@ public:
 protected:
     volatile unsigned int evaluate(bool max_core=false);
     static Core_Statistics _core_statistics;
+    static Spin _core_lock;
 
 };
 

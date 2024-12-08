@@ -92,6 +92,10 @@ public:
         return obj;
     }
 
+    T * migrate() {
+        return Base::migrate()->object();
+    }
+
     T * choose(T * obj) {
         // db<Scheduler>(TRC) << "Scheduler[chosen=" << chosen() << "]::choose(" << obj;
 

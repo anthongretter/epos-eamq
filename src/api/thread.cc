@@ -423,12 +423,14 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
             for_all_threads(Criterion::UPDATE);
             next->criterion().handle(Criterion::AWARD | Criterion::ENTER);
             // P7 : se migração é ativo e condição para migrar for satisfeito
-            if (Criterion::migration && next->criterion().personal_statistics().migrate && next->criterion().migrate()) {
+            if (Criterion::migration && next->criterion().periodic() && next->criterion().personal_statistics().migrate && next->criterion().migrate()) {
                 // não sei se é melhor alterar evaluate para receber um parametro para não escolher mesmo core...
+                db<AAA>(WRN) << "NEXT: " << next << endl;
                 next->criterion().queue(next->criterion().core_Statistics().min_core); // avalia qual core melhor e troca
                 next->criterion().rank_eamq();                  // atribui novo rank no novo core
                 next->criterion().reset_pmu_personal_stats(); // resetar as estatisticas
-                next = _scheduler.choose_another();             // escolhe novo proximo
+                next = _scheduler.migrate();             // escolhe novo proximo
+                db<AAA>(WRN) << "NEXT: " << next << endl;
             }
             // OU
             // if (Criterion::migration) { // && condicao por certo periodo de tempo? (tipo 10ms ou 100ms?)

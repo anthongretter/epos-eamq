@@ -1497,10 +1497,17 @@ public:
         // _chosen = e;
         // return _chosen;
     }
+    void chosen(Element * e) { _chosen = e; }
+    void pop_chosen() { _chosen = nullptr; }
+//    Element * remove() {
+//        volatile Element * tmp = _chosen;
+//        _chosen = choose_another();
+//        return tmp;
+//    }
+     using Base::remove;
 
 private:
     L _list[Q];
-    // using Base::remove;
     unsigned int _total_size;
     unsigned int _occupied_queues; 
     Element *volatile _chosen;
@@ -1930,7 +1937,22 @@ public:
 
     Element *choose_another()
     {
+//        if (_list[R::current_queue()].choose()->rank().queue() != R::current_queue()) {
+//            insert(_list[R::current_queue()].chosen());
+//            _list[R::current_queue()].pop_chosen();
+//            _list[R::current_queue()].chosen(_list[R::current_queue()].choose());
+//        }
         return _list[R::current_queue()].choose_another();
+    }
+
+    Element *migrate()
+    {
+        if (_list[R::current_queue()].choose()->rank().queue() != R::current_queue()) {
+            insert(_list[R::current_queue()].chosen());
+            _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
+//            _list[R::current_queue()].pop_chosen();
+        }
+        return _list[R::current_queue()].choose();
     }
 
     Element *choose(Element *e)

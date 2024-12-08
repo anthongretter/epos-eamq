@@ -456,9 +456,11 @@ PEAMQ::Core_Statistics PEAMQ::_core_statistics = {
     /* cache_hit */           {0},
     /* branch_instruction */  {0}
 };
+Spin PEAMQ::_core_lock;
 
 volatile unsigned int PEAMQ::evaluate(bool max_core)
 {
+    _core_lock.acquire();
     unsigned long long min = IDLE;
     unsigned int chosen_core = 0;
     unsigned long long max = 0;
@@ -524,36 +526,37 @@ volatile unsigned int PEAMQ::evaluate(bool max_core)
             }
         }
     }
+    _core_lock.release();
     if (max_core) {
         return max_core_id;
-    } 
+    }
     return chosen_core;
 }
 
 void PEAMQ::handle(Event event) {
     if (periodic() && (event & LEAVE)) {
+        _core_lock.acquire();
         _core_statistics.instruction_retired[CPU::id()] += PMU::read(2);
         _core_statistics.branch_misses[CPU::id()] += PMU::read(3);
         _core_statistics.branch_instruction[CPU::id()] += PMU::read(4);
         _core_statistics.cache_hit[CPU::id()] += PMU::read(5);
         _core_statistics.cache_misses[CPU::id()] += PMU::read(6);
 
-        // P7 : analisando porcentagem e colocando se necessário migrar
+        // P7 : analisando porcentagem e colocando se ecessário migrar
         if (_core_statistics.cache_hit[CPU::id()]) {
             unsigned long long cm_rate = (_core_statistics.cache_misses[CPU::id()]*100) / (_core_statistics.cache_misses[CPU::id()] + _core_statistics.cache_hit[CPU::id()]);
             db<AAA>(WRN) << "cm_rate: " << cm_rate << endl;
             if (!_personal_statistics.migrate) {
                 // Só coloquei um número, talvez melhor trocar
-                if (cm_rate >= 20)
+                if (cm_rate >= 25)
                     _personal_statistics.migrate = true;
-
             } else {
-                if (cm_rate < 20)
+                if (cm_rate < 25)
                     _personal_statistics.migrate = false;
             }
         }
 
-        // P7 : identificar Core menos e mais com score 
+//         P7 : identificar Core menos e mais com score
 //        unsigned int id_max = ANY;
 //        unsigned long long aux = ANY;
         _core_statistics.min_core = evaluate();
@@ -568,16 +571,21 @@ void PEAMQ::handle(Event event) {
         _core_statistics.instruction_retired[CPU::id()] -= _personal_statistics.instructions;
     }
     // let EAMQ handle the rest and reset PMU
+    _core_lock.release();
     EAMQ::handle(event);
 }
 
 // P7 : função ativado no thread::idle(), verifica qual core cada thread vai migrar
 bool PEAMQ::migrate() {
     // se atual core é o que está sendo mais utilizado e min diferente de max
-    if(_core_statistics.max_core == CPU::id() && _core_statistics.min_core != _core_statistics.max_core) {
-        db<AAA>(WRN) << "vai mudar para " << _core_statistics.min_core << endl;
+    _core_lock.acquire();
+    db<AAA>(WRN) << "Max " << _core_statistics.max_core << " Min: " << _core_statistics.min_core << endl;
+    if(_core_statistics.max_core == CPU::id() && _core_statistics.min_core != _core_statistics.max_core && Thread::scheduler()->size(_queue) > 1) {
+        db<AAA>(WRN) << "AAAAA!!!! vai mudar para " << _core_statistics.min_core << endl;
+        _core_lock.release();
         return true;
     }
+    _core_lock.release();
     return false;
 }
 
