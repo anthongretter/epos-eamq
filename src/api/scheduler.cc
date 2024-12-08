@@ -540,21 +540,22 @@ void PEAMQ::handle(Event event) {
 
         // P7 : analisando porcentagem e colocando se necessário migrar
         if (_core_statistics.cache_hit[CPU::id()]) {
-            unsigned int cm_rate = _core_statistics.cache_misses[CPU::id()]*100 / (_core_statistics.cache_misses[CPU::id()] + _core_statistics.cache_hit[CPU::id()]);
+            unsigned long long cm_rate = (_core_statistics.cache_misses[CPU::id()]*100) / (_core_statistics.cache_misses[CPU::id()] + _core_statistics.cache_hit[CPU::id()]);
+            db<AAA>(WRN) << "cm_rate: " << cm_rate << endl;
             if (!_personal_statistics.migrate) {
                 // Só coloquei um número, talvez melhor trocar
-                if (cm_rate >= 50) 
+                if (cm_rate >= 20)
                     _personal_statistics.migrate = true;
 
             } else {
-                if (cm_rate < 50)
+                if (cm_rate < 20)
                     _personal_statistics.migrate = false;
             }
         }
 
         // P7 : identificar Core menos e mais com score 
-        unsigned int id_max = ANY;
-        unsigned long long aux = ANY;
+//        unsigned int id_max = ANY;
+//        unsigned long long aux = ANY;
         _core_statistics.min_core = evaluate();
         _core_statistics.max_core = evaluate(true);
 
@@ -575,13 +576,11 @@ bool PEAMQ::migrate() {
     if(_core_statistics.min_core != ANY && _core_statistics.max_core != ANY) {
         // se atual core é o que está sendo mais utilizado e min diferente de max
         if(_core_statistics.max_core == CPU::id() && _core_statistics.min_core != _core_statistics.max_core) {
+            db<AAA>(WRN) << "vai mudar para " << _core_statistics.min_core << endl;
             return true;
-        } else {
-            return false;
         }
-    } else {
-        return false;
     }
+    return false;
 }
 
 

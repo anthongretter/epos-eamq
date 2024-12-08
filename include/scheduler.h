@@ -413,9 +413,9 @@ public:
 
     static const volatile unsigned int &current_queue_eamq() { return _current_queue[CPU::id()]; } // current global queue
     virtual void next_queue() { ++_current_queue[CPU::id()] %= QUEUES;}        // points to next global queue with threads
+    void reset_pmu_personal_stats();
 
 protected:
-    void reset_pmu_personal_stats();
     void set_queue(unsigned int q) { _queue_eamq = q; };
 
     /* Em caso de 4 filas em relacao a frequencia maxima:

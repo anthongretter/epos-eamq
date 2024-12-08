@@ -11,9 +11,13 @@ Mutex cout_m;
 
 int bruh(int n)
 {
-    Alarm::delay(100000 + (int(Random::random()) % 10000));     // 0.1s - 0.2s
+    int wt = 1000000 + (unsigned(Random::random()) % 2000000);      // 1s - 3s
     cout_m.lock();
-    cout << "CPU: " << CPU::id() << " bruh - " << n << endl;
+    cout << "CPU: " << CPU::id() << " bruh - " << n << ": vou esperar " << wt / 1000000  << "s" << endl;
+    cout_m.unlock();
+    Alarm::delay(wt);
+    cout_m.lock();
+    cout << "CPU: " << CPU::id() << " bruh - " << n << ": bye!" << endl;
     cout_m.unlock();
     return 0;
 }
@@ -24,7 +28,18 @@ int poggers(int n)
         cout_m.lock();
         cout << "CPU: " << CPU::id() << " poggers - " << n << endl;
         cout_m.unlock();
-        Alarm::delay(100000 + (int(Random::random()) % 10000));     // 0.1s - 0.2s
+        const int size = 1000000;  // Adjust size as needed
+        volatile int arr[size];
+
+        // Access memory with a large stride to cause cache misses
+        for (int i = 0; i < size; i += (unsigned(Random::random()) % 10)) {  // random stride
+            arr[i] = (unsigned(Random::random()) % size);
+        }
+        volatile int aleatorio = arr[(unsigned(Random::random()) % size)];
+//        Alarm::delay(100000 + (unsigned(Random::random()) % 10000));     // 0.1s - 0.2s
+        cout_m.lock();
+        cout << "CPU: " << CPU::id() << " poggers - " << n << ": oq achei: " << aleatorio << ": bye!" << endl;
+        cout_m.unlock();
     } while (Periodic_Thread::wait_next());
     return 0;
 }
@@ -33,8 +48,8 @@ int main()
 {
     cout << "MAIN: Hello world!\n" << endl;
 
-    const int N_THREADS_A = 24; // Aperiodic
-    const int N_THREADS_P = 3; // Periodic
+    const int N_THREADS_A = 0; // Aperiodic
+    const int N_THREADS_P = 1; // Periodic
 
     const Thread::Criterion CRITS[3]{Thread::LOW, Thread::NORMAL, Thread::HIGH};
 
@@ -44,11 +59,11 @@ int main()
     {
         // Thread periodic
         auto conf = Periodic_Thread::Configuration(
-            500000 + (int(Random::random()) % 50000),            //   0.5s - 1s
-            (500000 + (int(Random::random()) % 50000)) * 10,     //   5s - 10s
+            500000 + (unsigned(Random::random()) % 500000),            //   0.5s - 1s
+            (500000 + (unsigned(Random::random()) % 500000)) * 1000,     //   500s - 1000s
             Periodic_Thread::UNKNOWN,
             Periodic_Thread::NOW,
-            3
+            10
         );
         ts[i] = new Periodic_Thread(conf, &poggers, i);
     }
