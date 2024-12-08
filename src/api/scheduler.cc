@@ -513,15 +513,15 @@ volatile unsigned int PEAMQ::evaluate(bool max_core)
         core_rate = core_rate * pmu;
         if (core_rate < min)
         {
-            // P7 : coletar o maximo também 
-            if (max_core) {
-                if (core_rate > max) {
-                    max = core_rate;
-                    max_core_id = core;
-                }
-            }
             min = core_rate;
             chosen_core = core;
+        }
+        // P7 : coletar o maximo também 
+        if (max_core) {
+            if (core_rate > max) {
+                max = core_rate;
+                max_core_id = core;
+            }
         }
     }
     if (max_core) {
