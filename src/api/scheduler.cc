@@ -573,12 +573,10 @@ void PEAMQ::handle(Event event) {
 
 // P7 : função ativado no thread::idle(), verifica qual core cada thread vai migrar
 bool PEAMQ::migrate() {
-    if(_core_statistics.min_core != ANY && _core_statistics.max_core != ANY) {
-        // se atual core é o que está sendo mais utilizado e min diferente de max
-        if(_core_statistics.max_core == CPU::id() && _core_statistics.min_core != _core_statistics.max_core) {
-            db<AAA>(WRN) << "vai mudar para " << _core_statistics.min_core << endl;
-            return true;
-        }
+    // se atual core é o que está sendo mais utilizado e min diferente de max
+    if(_core_statistics.max_core == CPU::id() && _core_statistics.min_core != _core_statistics.max_core) {
+        db<AAA>(WRN) << "vai mudar para " << _core_statistics.min_core << endl;
+        return true;
     }
     return false;
 }
