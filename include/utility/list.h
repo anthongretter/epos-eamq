@@ -1889,13 +1889,7 @@ public:
     // Quantidade de filas ocupadas em determinado momento baseado em seu próprio chosen / fila com threads
     // Usado em round_profile, não liga para threads escolhidas por outros cores
     const int occupied_queues() { 
-        int count = 0;
-        for (unsigned int i = 0; i < QM; i++) {
-            if (_list[i].chosen() || !_list[i].empty()) {
-                count++;
-            }
-        }
-        return count;
+        return _list[R::current_queue()].occupied_queues();
     }
 
     Element *volatile &chosen()
@@ -1945,14 +1939,18 @@ public:
         return _list[R::current_queue()].choose_another();
     }
 
+    // Migrate choosen to a new queue (core)
     Element *migrate()
     {
         if (_list[R::current_queue()].choose()->rank().queue() != R::current_queue()) {
+            // insere o choosen na queue que ele quiser ir
             insert(_list[R::current_queue()].chosen());
-            _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
-            // _list[R::current_queue()].pop_chosen();
+            // removemos o choosen (agora nullptr)
+            _list[R::current_queue()].pop_chosen();
+            // elegemos o novo choosen
+            _list[R::current_queue()].choose();
         }
-        return _list[R::current_queue()].choose();
+        return _list[R::current_queue()].chosen();
     }
 
     Element *choose(Element *e)

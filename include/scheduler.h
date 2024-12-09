@@ -415,8 +415,8 @@ public:
     virtual void next_queue() { ++_current_queue[CPU::id()] %= QUEUES;}        // points to next global queue with threads
     void reset_pmu_personal_stats();
 
-protected:
     void set_queue(unsigned int q) { _queue_eamq = q; };
+protected:
 
     /* Em caso de 4 filas em relacao a frequencia maxima:
      *   0 -> 100%
@@ -463,49 +463,50 @@ protected:
 };
 
 // P3TEST - Multicore Global Scheduling 
-class GEAMQ : public EAMQ
-{
-public:
-    static const unsigned HEADS = Traits<Machine>::CPUS;
+// class GEAMQ : public EAMQ
+// {
+// public:
+//     static const unsigned HEADS = Traits<Machine>::CPUS;
 
-    // initialize_current_queue pois a main que é a primeira a rodar é aperiodica
-    GEAMQ(int p = APERIODIC): EAMQ(p) {initialize_current_queue();}
-    GEAMQ(const Microsecond p, const Microsecond d = SAME, const Microsecond c = UNKNOWN): EAMQ(p, d, c) {}
+//     // initialize_current_queue pois a main que é a primeira a rodar é aperiodica
+//     GEAMQ(int p = APERIODIC): EAMQ(p) {initialize_current_queue();}
+//     GEAMQ(const Microsecond p, const Microsecond d = SAME, const Microsecond c = UNKNOWN): EAMQ(p, d, c) {}
     
-    using EAMQ::queue_eamq;
+//     using EAMQ::queue_eamq;
     
-protected:
-    static volatile unsigned int _current_queue[HEADS];
+// protected:
+//     static volatile unsigned int _current_queue[HEADS];
 
-    static void initialize_current_queue() {
-        if (!initialized) {
-            for (volatile unsigned int &q : _current_queue) {
-                q = QUEUES - 1;
-            }
-            initialized = true;
-        }
-    }
-    static bool initialized;
+//     static void initialize_current_queue() {
+//         if (!initialized) {
+//             for (volatile unsigned int &q : _current_queue) {
+//                 q = QUEUES - 1;
+//             }
+//             initialized = true;
+//         }
+//     }
+//     static bool initialized;
     
 
-public:
-    int rank_eamq();
-    void handle(Event event);
+// public:
+//     int rank_eamq();
+//     void handle(Event event);
 
-    void next_queue() override { _current_queue[CPU::id()] = (_current_queue[CPU::id()] + 1) % QUEUES;}
+//     void next_queue() override { _current_queue[CPU::id()] = (_current_queue[CPU::id()] + 1) % QUEUES;}
     
-    static const volatile unsigned int &current_queue() { return _current_queue[CPU::id()]; }
-    static unsigned int current_head() { return CPU::id(); }
+//     static const volatile unsigned int &current_queue() { return _current_queue[CPU::id()]; }
+//     static unsigned int current_head() { return CPU::id(); }
 
 
-};
+// };
 
 class PEAMQ : public Variable_Queue_Scheduler, public EAMQ 
 {
 public: 
     static const unsigned int QUEUES_CORES = Traits<Machine>::CPUS;
-    // P7 : booleano para indicar se permite migrar thread ou não
+    // P7 : booleano para indicar se permite migrar thread ou não e se acabou de migrar
     static const bool migration = true;
+    bool _recently_migrated = false;
 
     PEAMQ(int p = APERIODIC)
     : Variable_Queue_Scheduler(((p == IDLE) || (p == MAIN)) ? CPU::id() : ++_next_queue %= CPU::cores()), EAMQ(p) {}
@@ -536,7 +537,6 @@ public:
 protected:
     volatile unsigned int evaluate(bool max_core=false);
     static Core_Statistics _core_statistics;
-
 };
 
 __END_SYS

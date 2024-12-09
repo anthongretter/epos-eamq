@@ -303,9 +303,9 @@ void Thread::sleep(Queue *q)
 
     Thread *next = _scheduler.chosen();
     //db<PEAMQ>(WRN) << "PREV: " << prev->link() << ", NEXT: "<< next->link() << endl;
-    if (next == nullptr) {
-        db<GEAMQ>(WRN) << "TAMANHO DA FILA"<< GEAMQ::current_queue() << ": " << _scheduler.size(GEAMQ::current_queue())<< endl;
-    }
+    // if (next == nullptr) {
+    //     db<GEAMQ>(WRN) << "TAMANHO DA FILA"<< GEAMQ::current_queue() << ": " << _scheduler.size(GEAMQ::current_queue())<< endl;
+    // }
 
     dispatch(prev, next);
 
@@ -422,22 +422,29 @@ void Thread::dispatch(Thread *prev, Thread *next, bool charge)
             prev->criterion().handle(Criterion::CHARGE | Criterion::LEAVE);
             for_all_threads(Criterion::UPDATE);
             next->criterion().handle(Criterion::AWARD | Criterion::ENTER);
+
             // P7 : se migração é ativo e condição para migrar for satisfeito
             if (Criterion::migration && next->criterion().periodic() && next->criterion().personal_statistics().migrate && next->criterion().migrate()) {
                 // não sei se é melhor alterar evaluate para receber um parametro para não escolher mesmo core...
                 db<AAA>(WRN) << "NEXT: " << next << endl;
-                next->criterion().queue(next->criterion().core_Statistics().min_core); // avalia qual core melhor e troca
-                next->criterion().rank_eamq();                  // atribui novo rank no novo core
-                next->criterion().reset_pmu_personal_stats(); // resetar as estatisticas
-                next = _scheduler.migrate();             // escolhe novo proximo
+
+                next->criterion().queue(next->criterion().core_Statistics().min_core); // atribui o novo core que a thread vai migrar
+                // Novo core precisa rerankear a thread
+                // next->criterion().rank_eamq();                   // atribui novo rank no novo core
+                next->criterion()._recently_migrated = true;
+                next->criterion()._priority = LOW;                          // atribui prioridade baixa para a thread que migrou
+                next->criterion().set_queue(next->criterion().QUEUES - 1);  // atribui a fila com menor frequência possível
+
+                next->criterion().reset_pmu_personal_stats();               // resetar as estatisticas
+                next = _scheduler.migrate();                                // escolhe novo proximo
                 db<AAA>(WRN) << "NEXT: " << next << endl;
+
+                // Como há reatribuição ao next ele pode ser igual ao prev novamente
+                if (prev == next) {
+                    db<PEAMQ>(WRN) << "Migramos a thread e o next voltou a ser o prev!" << endl;
+                    return;
+                }
             }
-            // OU
-            // if (Criterion::migration) { // && condicao por certo periodo de tempo? (tipo 10ms ou 100ms?)
-            //     for_all_threads(Criterion::MIGRATE); // não sei se é boa fazer de todos threads
-            //     // fazer analise de migração em todos thread
-            // }
-            // Também podemos colocar no idle() em vez de dipatch() -> apenas quando o sistema detecta que um núcleo está ocioso ou subutilizado.
         }
 
         if (prev->_state == RUNNING) {

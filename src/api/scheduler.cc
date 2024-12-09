@@ -91,8 +91,8 @@ template FCFS::FCFS<>(int p);
 /////////////////////////////// P2 - Single core /////////////////////////////// 
 //volatile unsigned EAMQ::_current_queue = QUEUES - 1;
 volatile unsigned int EAMQ::_current_queue[Traits<Machine>::CPUS] = {QUEUES - 1};
-volatile unsigned int GEAMQ::_current_queue[GEAMQ::HEADS] = {QUEUES - 1}; // apenas inicializa o core 0
-bool GEAMQ::initialized = false; // workaround para fazer uma lazy initialization no _current_queue
+// volatile unsigned int GEAMQ::_current_queue[GEAMQ::HEADS] = {QUEUES - 1}; // apenas inicializa o core 0
+// bool GEAMQ::initialized = false; // workaround para fazer uma lazy initialization no _current_queue
 bool EAMQ::initialized = false;
 
 // Construtor para threads aperiódicas
@@ -501,6 +501,14 @@ volatile unsigned int PEAMQ::evaluate(bool max_core)
 }
 
 void PEAMQ::handle(Event event) {
+    if (periodic() && (event & UPDATE)) {
+        if (_recently_migrated) {
+            _recently_migrated = false;
+            // preciso remover a thread que está rodando aqui
+            rank_eamq();
+        }
+    }
+
     if (periodic() && (event & LEAVE)) {
         _core_statistics.instruction_retired[CPU::id()] += PMU::read(2);
         _core_statistics.branch_misses[CPU::id()] += PMU::read(3);
@@ -543,6 +551,8 @@ void PEAMQ::handle(Event event) {
 // P7 : função ativado no thread::idle(), verifica qual core cada thread vai migrar
 bool PEAMQ::migrate() {
     // se atual core é o que está sendo mais utilizado e min diferente de max
+    // _queue é setado em Variable_Queue_Scheduler na criação do Criterion
+    // não faz sentido sair do core atual se houver apenas ele (ele é o problema)
     if(_core_statistics.max_core == CPU::id() && _core_statistics.min_core != _core_statistics.max_core && Thread::scheduler()->size(_queue) > 1) {
         db<AAA>(WRN) << "AAAAA!!!! vai mudar para " << _core_statistics.min_core << endl;
         return true;
