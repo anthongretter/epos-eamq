@@ -479,7 +479,16 @@ volatile unsigned int PEAMQ::evaluate(bool max_core)
                 core_rate += last_element->object()->priority() - (((last_element->object()->priority() / 1000) * 125) * q);   // (1 - 0.125 x q)
             }
         }
-        long long pmu = branch_miss_rate + cache_miss_rate + instruction_retired; // ~ 300 max
+        // Antes:
+        // long long pmu = branch_miss_rate + cache_miss_rate + instruction_retired; // ~ 300 max
+        
+        // Agora:
+        long long pmu = 1;
+        if (cache_miss_rate > 50) {pmu = 20;} // errando muito cache
+        else if (branch_miss_rate > 50 && instruction_retired > 70) {pmu = 16;} // errando muito branch e rodando muitas instruções 
+        else if (branch_miss_rate > 50 && instruction_retired > 50) {pmu = 14;} // errando muito branch e rodando instruções razoaveis
+        else if (branch_miss_rate > 50) {pmu = 12;}  // errando muito branch
+        else if (instruction_retired < 30) {pmu = 4;} // por algum motivo rodando poucas instruções (não podemos garantir algo ruim)
         core_rate = core_rate * pmu;
         if (core_rate < min)
         {
