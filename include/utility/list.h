@@ -1950,7 +1950,7 @@ public:
         if (_list[R::current_queue()].choose()->rank().queue() != R::current_queue()) {
             insert(_list[R::current_queue()].chosen());
             _list[R::current_queue()].chosen(_list[R::current_queue()].remove());
-//            _list[R::current_queue()].pop_chosen();
+            // _list[R::current_queue()].pop_chosen();
         }
         return _list[R::current_queue()].choose();
     }
@@ -1963,8 +1963,6 @@ public:
 private:
     L _list[QM];
 };
-
-
 
 // Doubly-Linked, Grouping List
 template <typename T,
