@@ -29,11 +29,11 @@ int poggers(int n)
         cout << "CPU: " << CPU::id() << " poggers - " << n << endl;
         cout_m.unlock();
 
-        const int size = 1000000;  // Adjust size as needed
-        volatile int arr[size];
+        const int size = 100;
+        int arr[size];
 
         // grandes pulos de acesso para causar cache miss
-        for (int i = 0; i < size; i += (unsigned(Random::random()) % 100)) {
+        for (int i = 0; i < size; i += (unsigned(Random::random()) % 10)) {
             // esconde surpresa
             arr[i] = 42;
         }
@@ -49,7 +49,7 @@ int main()
 {
     cout << "MAIN: Hello world!\n" << endl;
 
-    const int N_THREADS_A = 0; // Aperiodic
+    const int N_THREADS_A = 12; // Aperiodic
     const int N_THREADS_P = 4; // Periodic
 
     const Thread::Criterion CRITS[3]{Thread::LOW, Thread::NORMAL, Thread::HIGH};
@@ -64,7 +64,7 @@ int main()
             (500000 + (unsigned(Random::random()) % 500000)) * 4,
             Periodic_Thread::UNKNOWN,
             Periodic_Thread::NOW,
-            10
+            2
         );
         ts[i] = new Periodic_Thread(conf, &poggers, i);
     }

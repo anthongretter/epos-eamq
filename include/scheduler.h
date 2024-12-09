@@ -507,7 +507,6 @@ public:
     // P7 : booleano para indicar se permite migrar thread ou não
     static const bool migration = true;
 
-    // P6 : Core Statistics para threads periódicas
     PEAMQ(int p = APERIODIC)
     : Variable_Queue_Scheduler(((p == IDLE) || (p == MAIN)) ? CPU::id() : ++_next_queue %= CPU::cores()), EAMQ(p) {}
     PEAMQ(const Microsecond & p, const Microsecond & d = SAME, const Microsecond & c = UNKNOWN, unsigned int cpu = ANY)
@@ -537,7 +536,6 @@ public:
 protected:
     volatile unsigned int evaluate(bool max_core=false);
     static Core_Statistics _core_statistics;
-    static Spin _core_lock;
 
 };
 
