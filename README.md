@@ -1,3 +1,7 @@
+# EPOS-EAMQ
+##### Anthon Porath Gretter, Emily Sayuri Kiba, Gabriela Regina Lother, Marco Antônio Machado de Arruda 
+The EPOS Energy-Aware Multi Queue (EAMQ) is a scheduling algorithm developed in semester 2024.2 for Operational Systems II chair (INE5424). Developed under the guidance of the prof. Antônio Augusto Fröhlich. The project was initially forked from the educational version of EPOS ([OSDI](https://gitlab.lisha.ufsc.br/epos/ine5424/-/tree/2024_2)). Each branch in this repository corresponds to a deliverable submitted to the discipline. More details about EPOS are shown below:
+
 # EPOS
 
 The [Embedded Parallel Operating System (EPOS)](https://epos.lisha.ufsc.br) project aims at automating the development of embedded systems so that developers can concentrate on what really matters: their applications. EPOS relies on the Application-Driven Embedded System Design (ADESD) method to guide the development of both software and hardware components that can be automatically adapted to fulfill the requirements of particular applications. EPOS features a set of tools to support developers in selecting, configuring, and plugging components into its application-specific framework. The combination of methodology, components, frameworks, and tools enable the automatic generation of an application-specific embedded system instances. 
